@@ -11,7 +11,6 @@ import (
 var (
 	containers = flag.Bool("c", false, "always build in containers")
 	verbose    = flag.Bool("v", false, "verbose")
-	skip       = flag.Bool("s", false, "skip rebuilding")
 )
 
 type target struct {
