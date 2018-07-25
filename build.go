@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"sort"
 	"strings"
 	"time"
 )
@@ -63,14 +64,22 @@ Options:
 		flag.PrintDefaults()
 		fmt.Printf("\nTargets:\n")
 		align := 6
+		sorted := sort.StringSlice{}
 		for _, t := range targets {
+			sorted = append(sorted, t.name)
+		}
+		sorted.Sort()
+		for _, s := range sorted {
+			t := targets[s]
 			lf := ""
-			len := align - len(t.name)
-			if len <= 0 {
-				lf = "\n"
-				len = align + 2
+			spaces := align - len(t.name)
+			if spaces <= 0 {
+				if len(t.description) > 0 {
+					lf = "\n"
+				}
+				spaces = align + 2
 			}
-			fmt.Printf("  %s%s%s\n", t.name, lf+strings.Repeat(" ", len), t.description)
+			fmt.Printf("  %s%s%s\n", t.name, lf+strings.Repeat(" ", spaces), t.description)
 		}
 	}
 	flag.Parse()
