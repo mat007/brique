@@ -14,7 +14,8 @@ import (
 
 var (
 	// PackageName stores the go package name of the project, this must not be left empty.
-	PackageName string
+	PackageName   string
+	AlpineVersion = "3.7"
 )
 
 type Tool struct {

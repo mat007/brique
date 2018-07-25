@@ -9,8 +9,7 @@ var (
 	cross    = flag.Bool("cross", false, "build for all platforms (linux, darwin, windows)")
 	parallel = flag.Bool("parallel", false, "build in parallel")
 
-	alpineVersion = "3.7"
-	goVersion     = "1.10.3"
+	GoVersion = "1.10.3"
 )
 
 var (
@@ -24,7 +23,7 @@ func Go(args ...string) Tool {
 			"go",
 			"version",
 			"http://golang.org",
-			"FROM golang:"+goVersion+"-alpine"+alpineVersion)
+			"FROM golang:"+GoVersion+"-alpine"+AlpineVersion)
 	})
 	if len(args) > 0 {
 		goTool.Run(args...)

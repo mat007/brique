@@ -1,6 +1,6 @@
 package b
 
-var depVersion = "v0.4.1"
+var DepVersion = "v0.4.1"
 
 func Dep(args ...string) Tool {
 	t := MakeTool(
@@ -8,10 +8,10 @@ func Dep(args ...string) Tool {
 		"version",
 		"https://github.com/golang/dep",
 		`
-FROM alpine:`+alpineVersion+`
+FROM alpine:`+AlpineVersion+`
 RUN apk add --no-cache curl
 
-RUN curl -o /usr/bin/dep -L https://github.com/golang/dep/releases/download/`+depVersion+`/dep-linux-amd64 && \
+RUN curl -o /usr/bin/dep -L https://github.com/golang/dep/releases/download/`+DepVersion+`/dep-linux-amd64 && \
     chmod +x /usr/bin/dep
 `)
 	if len(args) > 0 {

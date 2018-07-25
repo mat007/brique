@@ -18,7 +18,7 @@ func Git(args ...string) Tool {
 			"--version",
 			"https://git-scm.com/",
 			`
-FROM alpine:`+alpineVersion+`
+FROM alpine:`+AlpineVersion+`
 RUN apk add --no-cache git
 `)
 	})
