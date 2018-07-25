@@ -19,13 +19,15 @@ var (
 )
 
 type Tool struct {
-	name      string
-	url       string
-	env       []string
-	container bool
-	output    io.Writer
-	input     io.Reader
-	success   bool
+	name         string
+	url          string
+	env          []string
+	instructions string
+	names        string
+	container    bool
+	output       io.Writer
+	input        io.Reader
+	success      bool
 }
 
 func (t Tool) WithEnv(env ...string) Tool {
@@ -48,17 +50,29 @@ func (t Tool) WithSuccess() Tool {
 	return t
 }
 
+func (t Tool) WithTool(tool Tool) Tool {
+	t.instructions += "\n" + tool.instructions
+	if t.container || tool.container {
+		t.container = true
+		t.names += "-" + tool.name
+		t.buildImage()
+	}
+	return t
+}
+
 func MakeTool(name, check, url, instructions string) Tool {
 	t := Tool{
-		name:      name,
-		url:       url,
-		container: checkApplication(name, check),
+		name:         name,
+		url:          url,
+		instructions: instructions,
+		names:        name,
+		container:    noApplication(name, check),
 	}
 	if t.container && name != "" && url != "" {
 		log.Print("missing " + name + ": consider installing it to speed up the build, see " + url)
 	}
 	if t.container {
-		t.buildImage(instructions)
+		t.buildImage()
 	}
 	return t
 }
@@ -86,7 +100,7 @@ func WithOS(f func(goos string)) {
 	wg.Wait()
 }
 
-func checkApplication(name string, check string) bool {
+func noApplication(name, check string) bool {
 	if *verbose {
 		log.Println("checking for", name)
 	}
@@ -104,9 +118,9 @@ func checkApplication(name string, check string) bool {
 	return true
 }
 
-func (t Tool) buildImage(instructions string) {
+func (t Tool) buildImage() {
 	var buf bytes.Buffer
-	tarFile(instructions, "Dockerfile", &buf)
+	tarFile(t.instructions, "Dockerfile", &buf)
 	cmd := exec.Command("docker", "build", "-t", t.image(), "-")
 	cmd.Stderr = os.Stderr
 	if *verbose {
@@ -122,7 +136,7 @@ func (t Tool) image() string {
 	if PackageName == "" {
 		log.Fatalf("error building image for %s: missing PackageName", t.name)
 	}
-	return strings.Replace(PackageName, "/", "-", -1) + "-build-" + t.name
+	return strings.Replace(PackageName, "/", "-", -1) + "-build-" + t.names
 }
 
 func tarFile(content, filename string, writer io.Writer) {
