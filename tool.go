@@ -205,11 +205,14 @@ func (t Tool) runContainer(args []string) bool {
 	for _, e := range t.env {
 		envs = append(envs, "-e", e)
 	}
-	arg := append([]string{"run", "--rm", "-v", wd + ":" + w, "-w", w, "-t"}, envs...)
+	arg := append([]string{"run", "--rm", "-v", wd + ":" + w, "-w", w, "-i"}, envs...)
 	arg = append(arg, t.image(), t.name)
 	arg = append(arg, args...)
 	if t.success {
 		// $$$$ MAT ignore error for run cmd
+	}
+	if *verbose {
+		log.Println("running docker:", arg)
 	}
 	cmd := exec.Command("docker", arg...)
 	cmd.Stderr = os.Stderr
