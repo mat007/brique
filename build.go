@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"os"
 	"sort"
 	"strings"
 	"time"
@@ -55,6 +56,40 @@ func (t target) Default() target {
 	return t
 }
 
+func Parse() {
+	// manual flags parsing to enable verbose and containers before any actual work
+	for _, arg := range os.Args {
+		switch arg {
+		case "-v":
+			*verbose = true
+		case "-c":
+			*containers = true
+		}
+	}
+}
+
+func printTargets() {
+	fmt.Printf("\nTargets:\n")
+	align := 6
+	sorted := sort.StringSlice{}
+	for _, t := range targets {
+		sorted = append(sorted, t.name)
+	}
+	sorted.Sort()
+	for _, s := range sorted {
+		t := targets[s]
+		lf := ""
+		spaces := align - len(t.name)
+		if spaces <= 0 {
+			if len(t.description) > 0 {
+				lf = "\n"
+			}
+			spaces = align + 2
+		}
+		fmt.Printf("  %s%s%s\n", t.name, lf+strings.Repeat(" ", spaces), t.description)
+	}
+}
+
 func Run() {
 	flag.Usage = func() {
 		fmt.Print(`Usage: build [OPTIONS] [TARGETS]
@@ -62,25 +97,7 @@ func Run() {
 Options:
 `)
 		flag.PrintDefaults()
-		fmt.Printf("\nTargets:\n")
-		align := 6
-		sorted := sort.StringSlice{}
-		for _, t := range targets {
-			sorted = append(sorted, t.name)
-		}
-		sorted.Sort()
-		for _, s := range sorted {
-			t := targets[s]
-			lf := ""
-			spaces := align - len(t.name)
-			if spaces <= 0 {
-				if len(t.description) > 0 {
-					lf = "\n"
-				}
-				spaces = align + 2
-			}
-			fmt.Printf("  %s%s%s\n", t.name, lf+strings.Repeat(" ", spaces), t.description)
-		}
+		printTargets()
 	}
 	flag.Parse()
 
