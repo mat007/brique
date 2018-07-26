@@ -112,21 +112,19 @@ func noApplication(name, check string) bool {
 	if err == nil {
 		return *containers
 	}
-	if _, ok := err.(*exec.ExitError); ok {
-		log.Fatalf("error checking %s: %s", name, err)
-	}
-	return true
+	_, ok := err.(*exec.ExitError)
+	return !ok
 }
 
 func (t Tool) buildImage() {
-	var buf bytes.Buffer
-	tarFile(t.instructions, "Dockerfile", &buf)
+	buf := &bytes.Buffer{}
+	tarFile(t.instructions, "Dockerfile", buf)
 	cmd := exec.Command("docker", "build", "-t", t.image(), "-")
 	cmd.Stderr = os.Stderr
 	if *verbose {
 		cmd.Stdout = os.Stdout
 	}
-	cmd.Stdin = &buf
+	cmd.Stdin = buf
 	if err := cmd.Run(); err != nil {
 		log.Fatalf("error building image for %s: %s", t.name, err)
 	}
@@ -205,6 +203,7 @@ func (t Tool) runContainer(args []string) bool {
 	for _, e := range t.env {
 		envs = append(envs, "-e", e)
 	}
+	// $$$$ MAT use --net=none by default and allow to customize by tool
 	arg := append([]string{"run", "--rm", "-v", wd + ":" + w, "-w", w, "-i"}, envs...)
 	arg = append(arg, t.image(), t.name)
 	arg = append(arg, args...)
