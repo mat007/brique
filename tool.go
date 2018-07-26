@@ -157,7 +157,7 @@ func tarFile(content, filename string, writer io.Writer) {
 	}
 }
 
-func (t Tool) Run(args ...string) {
+func (t Tool) Run(args ...string) bool {
 	if t.output == nil {
 		t.output = os.Stdout
 	}
@@ -165,13 +165,12 @@ func (t Tool) Run(args ...string) {
 		t.input = os.Stdin
 	}
 	if t.container {
-		t.runContainer(args)
-	} else {
-		t.runApplication(args)
+		return t.runContainer(args)
 	}
+	return t.runApplication(args)
 }
 
-func (t Tool) runApplication(args []string) {
+func (t Tool) runApplication(args []string) bool {
 	if *verbose {
 		log.Println("running", t.name, args)
 	}
@@ -187,9 +186,10 @@ func (t Tool) runApplication(args []string) {
 			log.Fatalf("error running %s: %s", t.name, err)
 		}
 	}
+	return cmd.ProcessState.Success()
 }
 
-func (t Tool) runContainer(args []string) {
+func (t Tool) runContainer(args []string) bool {
 	if *verbose {
 		log.Println("running (container)", t.name, args)
 	}
@@ -218,4 +218,5 @@ func (t Tool) runContainer(args []string) {
 	if err := cmd.Run(); err != nil {
 		log.Fatalf("error running container for %s: %s", t.name, err)
 	}
+	return cmd.ProcessState.Success()
 }
