@@ -56,7 +56,7 @@ func (t target) Default() target {
 	return t
 }
 
-func Parse() {
+func init() {
 	// manual flags parsing to enable verbose and containers before any actual work
 	for _, arg := range os.Args {
 		switch arg {
