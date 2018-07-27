@@ -60,7 +60,23 @@ func (t Tool) WithTool(tool Tool) Tool {
 	return t
 }
 
-func MakeTool(name, check, url, instructions string) Tool {
+func MakeTool(name, check, url, instructions string, args ...string) Tool {
+	t := makeTool(name, check, url, instructions)
+	if len(args) > 0 {
+		t.Run(args...)
+	}
+	return t
+}
+
+var tools = make(map[string]Tool)
+
+func makeTool(name, check, url, instructions string) Tool {
+	m := sync.Mutex{}
+	m.Lock()
+	defer m.Unlock()
+	if t, ok := tools[name]; ok {
+		return t
+	}
 	t := Tool{
 		name:         name,
 		url:          url,
@@ -74,6 +90,7 @@ func MakeTool(name, check, url, instructions string) Tool {
 	if t.container {
 		t.buildImage()
 	}
+	tools[name] = t
 	return t
 }
 

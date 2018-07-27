@@ -3,29 +3,17 @@ package b
 import (
 	"bytes"
 	"strings"
-	"sync"
-)
-
-var (
-	gitTool Tool
-	gitOnce sync.Once
 )
 
 func Git(args ...string) Tool {
-	gitOnce.Do(func() {
-		gitTool = MakeTool(
-			"git",
-			"--version",
-			"https://git-scm.com/",
-			`
+	return MakeTool(
+		"git",
+		"--version",
+		"https://git-scm.com/",
+		`
 FROM alpine:`+AlpineVersion+`
-RUN apk add --no-cache git
-`)
-	})
-	if len(args) > 0 {
-		gitTool.Run(args...)
-	}
-	return gitTool
+RUN apk add --no-cache git`,
+		args...)
 }
 
 func GitShortCommit() string {
