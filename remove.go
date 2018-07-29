@@ -5,14 +5,11 @@ import (
 	"os"
 )
 
-func Remove(paths ...string) {
+func (b *B) Remove(paths ...string) {
 	err := remove(func(path string) {
-		if *verbose {
-			log.Println("removed", path)
-		}
 	}, paths...)
 	if err != nil {
-		log.Fatalf("clean failed: %s", err)
+		log.Fatalf("remove failed: %s", err)
 	}
 }
 
@@ -24,8 +21,8 @@ func remove(notify func(path string), paths ...string) error {
 	for _, match := range matches {
 		if err := os.RemoveAll(match); err != nil {
 			return err
-		} else if notify != nil {
-			notify(match)
+		} else if *verbose {
+			log.Printf("removed %q", match)
 		}
 	}
 	return nil
