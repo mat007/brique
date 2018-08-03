@@ -1,4 +1,4 @@
-package b
+package building
 
 import (
 	"flag"
@@ -7,6 +7,7 @@ import (
 	"os"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -15,46 +16,56 @@ var (
 	verbose    = flag.Bool("v", false, "verbose")
 )
 
+type B struct {
+	root    string
+	targets map[string]target
+	tools   map[string]Tool
+	mutex   sync.Mutex
+}
+
 type target struct {
 	name        string
 	description string
-	f           func()
+	f           func(*B)
 }
 
-var (
-	targets       = make(map[string]target)
-	defaultTarget target
-)
+func NewB(root string) *B {
+	return &B{
+		root:    root,
+		targets: make(map[string]target),
+		tools:   make(map[string]Tool),
+	}
+}
 
-func Target(name, description string, f func()) target {
+func (b *B) MakeTarget(name, description string, f func(*B)) target {
 	t := target{
 		name:        name,
 		description: description,
 		f:           f,
 	}
-	targets[name] = t
+	b.targets[name] = t
 	return t
 }
 
-func Build(t target) {
+func (b *B) Build(t target) {
 	if *verbose {
 		log.Println(">", t.name)
 	}
 	start := time.Now()
-	t.f()
+	t.f(b)
 	if *verbose {
 		delta := time.Now().Sub(start)
 		log.Printf("< %s (took %s)", t.name, delta)
 	}
 }
 
-func (t target) Default() target {
-	if defaultTarget.f != nil {
-		log.Fatalf("%s cannot be set as default: %s already set", t.name, defaultTarget.name)
-	}
-	defaultTarget = t
-	return t
-}
+// func (t target) Default() target {
+// 	if defaultTarget.f != nil {
+// 		Fatalf("%s cannot be set as default: %s already set", t.name, defaultTarget.name)
+// 	}
+// 	defaultTarget = t
+// 	return t
+// }
 
 func init() {
 	// manual flags parsing to enable verbose and containers before any actual work
@@ -68,16 +79,16 @@ func init() {
 	}
 }
 
-func printTargets() {
+func (b *B) printTargets() {
 	fmt.Printf("\nTargets:\n")
 	align := 6
 	sorted := sort.StringSlice{}
-	for _, t := range targets {
+	for _, t := range b.targets {
 		sorted = append(sorted, t.name)
 	}
 	sorted.Sort()
 	for _, s := range sorted {
-		t := targets[s]
+		t := b.targets[s]
 		lf := ""
 		spaces := align - len(t.name)
 		if spaces <= 0 {
@@ -90,30 +101,31 @@ func printTargets() {
 	}
 }
 
-func Run() {
+func (b *B) Run() {
 	flag.Usage = func() {
 		fmt.Print(`Usage: build [OPTIONS] [TARGETS]
 
 Options:
 `)
 		flag.PrintDefaults()
-		printTargets()
+		b.printTargets()
 	}
 	flag.Parse()
 
 	var runs []target
 	args := flag.Args()
 	if len(args) == 0 {
-		if defaultTarget.f == nil {
-			log.Fatal("missing default target")
-		}
-		runs = append(runs, defaultTarget)
+		Fatal("no target specified")
+		// if defaultTarget.f == nil {
+		// 	Fatal("missing default target")
+		// }
+		// runs = append(runs, defaultTarget)
 	}
 	for _, a := range args {
-		if t, ok := targets[a]; ok {
+		if t, ok := b.targets[a]; ok {
 			runs = append(runs, t)
 		} else {
-			log.Fatalln("invalid target", a)
+			Fatalln("invalid target", a)
 		}
 	}
 
@@ -122,7 +134,7 @@ Options:
 	}
 	start := time.Now()
 	for _, t := range runs {
-		Build(t)
+		b.Build(t)
 	}
 	if *verbose {
 		delta := time.Now().Sub(start)
@@ -130,7 +142,7 @@ Options:
 	}
 }
 
-func ExecExt(os string) string {
+func (b *B) ExecExt(os string) string {
 	if os == "windows" {
 		return ".exe"
 	}

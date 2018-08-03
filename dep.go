@@ -1,9 +1,9 @@
-package b
+package building
 
 var DepVersion = "v0.4.1"
 
-func Dep(args ...string) Tool {
-	return MakeTool(
+func (b *B) Dep(args ...string) Tool {
+	return b.MakeTool(
 		"dep",
 		"version",
 		"https://github.com/golang/dep",

@@ -1,4 +1,4 @@
-package b
+package building
 
 import (
 	"archive/tar"
@@ -21,7 +21,7 @@ type tarf struct {
 	files []string
 }
 
-func Tar(args ...string) tarr {
+func (b *B) Tar(args ...string) tarr {
 	t := tarr{}
 	if len(args) > 0 {
 		t.Run(args...)
@@ -46,7 +46,7 @@ func (t tarr) WithFiles(dir string, files ...string) tarr {
 
 func (t tarr) Run(args ...string) {
 	if len(args) == 0 {
-		log.Fatal("tar failed: needs at least one argument")
+		Fatal("tar failed: needs at least one argument")
 	}
 	if len(args[1:]) > 0 {
 		t.files = append(t.files, tarf{
@@ -57,7 +57,7 @@ func (t tarr) Run(args ...string) {
 		t.output = os.Stdout
 	}
 	if err := tarFiles(t.output, args[0], t.files...); err != nil {
-		log.Fatalln("tar failed:", err)
+		Fatalln("tar failed:", err)
 	}
 }
 

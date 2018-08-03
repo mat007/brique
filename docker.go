@@ -1,6 +1,6 @@
-package b
+package building
 
-func Docker(args ...string) Tool {
+func (b *B) Docker(args ...string) Tool {
 	// $$$$ MAT check what happens with empty instructions
-	return MakeTool("docker", "--version", "https://www.docker.com", "")
+	return b.MakeTool("docker", "--version", "https://www.docker.com", "")
 }

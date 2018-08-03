@@ -1,4 +1,4 @@
-package b
+package building
 
 import (
 	"log"
@@ -7,24 +7,31 @@ import (
 )
 
 type command struct {
-	name string
+	name    string
+	success bool
 }
 
-func Command(name string) command {
+func (b *B) Command(name string) command {
 	return command{
 		name: name,
 	}
 }
 
-func (c command) Run(args ...string) command {
+func (c command) WithSuccess() command {
+	c.success = true
+	return c
+}
+
+func (c command) Run(args ...string) int {
 	if *verbose {
 		log.Println("running", c.name, args)
 	}
 	cmd := exec.Command(c.name, args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		log.Fatalf("error running %s: %s", c.name, err)
+	code, err := run(cmd, c.success)
+	if err != nil {
+		Fatalf("error running %s: %s", c.name, err)
 	}
-	return c
+	return code
 }

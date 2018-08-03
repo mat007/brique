@@ -1,4 +1,4 @@
-package b
+package building
 
 import (
 	"flag"
@@ -11,8 +11,8 @@ var (
 	GoVersion = "1.10.3"
 )
 
-func Go(args ...string) Tool {
-	return MakeTool(
+func (b *B) Go(args ...string) Tool {
+	return b.MakeTool(
 		"go",
 		"version",
 		"http://golang.org",

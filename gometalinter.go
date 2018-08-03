@@ -1,9 +1,9 @@
-package b
+package building
 
 var GoMetaLinterVersion = "2.0.5"
 
-func GoMetaLinter(args ...string) Tool {
-	return MakeTool(
+func (b *B) GoMetaLinter(args ...string) Tool {
+	return b.MakeTool(
 		"gometalinter",
 		"--version",
 		"https://github.com/alecthomas/gometalinter",

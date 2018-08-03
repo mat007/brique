@@ -1,4 +1,4 @@
-package b
+package building
 
 import (
 	"archive/tar"
@@ -10,15 +10,15 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+	"syscall"
 )
 
 var (
-	// PackageName stores the go package name of the project, this must not be left empty.
-	PackageName   string
 	AlpineVersion = "3.7"
 )
 
 type Tool struct {
+	root         string
 	name         string
 	url          string
 	env          []string
@@ -60,24 +60,22 @@ func (t Tool) WithTool(tool Tool) Tool {
 	return t
 }
 
-func MakeTool(name, check, url, instructions string, args ...string) Tool {
-	t := makeTool(name, check, url, instructions)
+func (b *B) MakeTool(name, check, url, instructions string, args ...string) Tool {
+	t := b.makeTool(name, check, url, instructions)
 	if len(args) > 0 {
 		t.Run(args...)
 	}
 	return t
 }
 
-var tools = make(map[string]Tool)
-
-func makeTool(name, check, url, instructions string) Tool {
-	m := sync.Mutex{}
-	m.Lock()
-	defer m.Unlock()
-	if t, ok := tools[name]; ok {
+func (b *B) makeTool(name, check, url, instructions string) Tool {
+	b.mutex.Lock()
+	defer b.mutex.Unlock()
+	if t, ok := b.tools[name]; ok {
 		return t
 	}
 	t := Tool{
+		root:         b.root,
 		name:         name,
 		url:          url,
 		instructions: instructions,
@@ -90,11 +88,11 @@ func makeTool(name, check, url, instructions string) Tool {
 	if t.container {
 		t.buildImage()
 	}
-	tools[name] = t
+	b.tools[name] = t
 	return t
 }
 
-func WithOS(f func(goos string)) {
+func (b *B) WithOS(f func(goos string)) {
 	platforms := []string{runtime.GOOS}
 	if *cross {
 		platforms = []string{"linux", "darwin", "windows"}
@@ -122,7 +120,7 @@ func noApplication(name, check string) bool {
 		log.Println("checking for", name)
 	}
 	if len(check) == 0 {
-		log.Fatalf("missing check for %s", name)
+		Fatalf("missing check for %s", name)
 	}
 	cmd := exec.Command(name, check)
 	err := cmd.Run()
@@ -143,15 +141,15 @@ func (t Tool) buildImage() {
 	}
 	cmd.Stdin = buf
 	if err := cmd.Run(); err != nil {
-		log.Fatalf("error building image for %s: %s", t.name, err)
+		Fatalf("error building image for %s: %s", t.name, err)
 	}
 }
 
 func (t Tool) image() string {
-	if PackageName == "" {
-		log.Fatalf("error building image for %s: missing PackageName", t.name)
+	if t.root == "" {
+		Fatalf("error building image for %s: missing root", t.name)
 	}
-	return strings.Replace(PackageName, "/", "-", -1) + "-build-" + t.names
+	return strings.Replace(t.root, "/", "-", -1) + "-build-" + t.names
 }
 
 func tarFile(content, filename string, writer io.Writer) {
@@ -162,17 +160,17 @@ func tarFile(content, filename string, writer io.Writer) {
 		Size: int64(len(content)),
 	}
 	if err := tw.WriteHeader(hdr); err != nil {
-		log.Fatal(err)
+		Fatal(err)
 	}
 	if _, err := tw.Write([]byte(content)); err != nil {
-		log.Fatal(err)
+		Fatal(err)
 	}
 	if err := tw.Close(); err != nil {
-		log.Fatal(err)
+		Fatal(err)
 	}
 }
 
-func (t Tool) Run(args ...string) bool {
+func (t Tool) Run(args ...string) int {
 	if t.output == nil {
 		t.output = os.Stdout
 	}
@@ -185,7 +183,7 @@ func (t Tool) Run(args ...string) bool {
 	return t.runApplication(args)
 }
 
-func (t Tool) runApplication(args []string) bool {
+func (t Tool) runApplication(args []string) int {
 	if *verbose {
 		log.Println("running", t.name, args)
 	}
@@ -196,26 +194,25 @@ func (t Tool) runApplication(args []string) bool {
 	}
 	cmd.Stdout = t.output
 	cmd.Stdin = t.input
-	if err := cmd.Run(); err != nil {
-		if _, ok := err.(*exec.ExitError); !ok || !t.success {
-			log.Fatalf("error running %s: %s", t.name, err)
-		}
+	code, err := run(cmd, t.success)
+	if err != nil {
+		Fatalf("error running %s: %s", t.name, err)
 	}
-	return cmd.ProcessState.Success()
+	return code
 }
 
-func (t Tool) runContainer(args []string) bool {
+func (t Tool) runContainer(args []string) int {
 	if *verbose {
 		log.Println("running (container)", t.name, args)
 	}
 	wd, err := os.Getwd()
 	if err != nil {
-		log.Fatalf("error running container for %s: %s", t.name, err)
+		Fatalf("error running container for %s: %s", t.name, err)
 	}
-	if PackageName == "" {
-		log.Fatalf("error running container for %s: missing PackageName", t.name)
+	if t.root == "" {
+		Fatalf("error running container for %s: missing root", t.name)
 	}
-	w := "/go/src/" + PackageName
+	w := "/go/src/" + t.root
 	var envs []string
 	for _, e := range t.env {
 		envs = append(envs, "-e", e)
@@ -224,9 +221,6 @@ func (t Tool) runContainer(args []string) bool {
 	arg := append([]string{"run", "--rm", "-v", wd + ":" + w, "-w", w, "-i"}, envs...)
 	arg = append(arg, t.image(), t.name)
 	arg = append(arg, args...)
-	if t.success {
-		// $$$$ MAT ignore error for run cmd
-	}
 	if *verbose {
 		log.Println("running docker:", arg)
 	}
@@ -234,8 +228,25 @@ func (t Tool) runContainer(args []string) bool {
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = t.output
 	cmd.Stdin = t.input
-	if err := cmd.Run(); err != nil {
-		log.Fatalf("error running container for %s: %s", t.name, err)
+	code, err := run(cmd, t.success)
+	if err != nil {
+		Fatalf("error running container for %s: %s", t.name, err)
 	}
-	return cmd.ProcessState.Success()
+	return code
+}
+
+func run(cmd *exec.Cmd, success bool) (int, error) {
+	if err := cmd.Run(); err != nil {
+		exit, ok := err.(*exec.ExitError)
+		if ok {
+			if success {
+				err = nil
+			}
+			if status, ok := exit.Sys().(syscall.WaitStatus); ok {
+				return status.ExitStatus(), err
+			}
+		}
+		return 1, err
+	}
+	return 0, nil
 }

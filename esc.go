@@ -1,7 +1,7 @@
-package b
+package building
 
-func Esc(args ...string) Tool {
-	return MakeTool(
+func (b *B) Esc(args ...string) Tool {
+	return b.MakeTool(
 		"esc",
 		"--help",
 		"https://github.com/mjibson/esc",

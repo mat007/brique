@@ -1,4 +1,4 @@
-package b
+package building
 
 import (
 	"log"
@@ -9,7 +9,7 @@ func (b *B) Remove(paths ...string) {
 	err := remove(func(path string) {
 	}, paths...)
 	if err != nil {
-		log.Fatalf("remove failed: %s", err)
+		Fatalf("remove failed: %s", err)
 	}
 }
 

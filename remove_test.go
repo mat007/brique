@@ -1,4 +1,4 @@
-package b
+package building
 
 import (
 	"path/filepath"

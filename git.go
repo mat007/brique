@@ -1,12 +1,12 @@
-package b
+package building
 
 import (
 	"bytes"
 	"strings"
 )
 
-func Git(args ...string) Tool {
-	return MakeTool(
+func (b *B) Git(args ...string) Tool {
+	return b.MakeTool(
 		"git",
 		"--version",
 		"https://git-scm.com/",
@@ -16,31 +16,31 @@ RUN apk add --no-cache git`,
 		args...)
 }
 
-func GitShortCommit() string {
+func (b *B) GitShortCommit() string {
 	buf := &bytes.Buffer{}
-	Git().WithOutput(buf).WithSuccess().Run("rev-parse", "--short", "HEAD")
-	return strings.TrimSuffix(buf.String(), "\n")
+	b.Git().WithOutput(buf).WithSuccess().Run("rev-parse", "--short", "HEAD")
+	return strings.TrimSpace(buf.String())
 }
 
-func GitCommit() string {
+func (b *B) GitCommit() string {
 	buf := &bytes.Buffer{}
-	Git().WithOutput(buf).WithSuccess().Run("rev-parse", "HEAD")
-	return strings.TrimSuffix(buf.String(), "\n")
+	b.Git().WithOutput(buf).WithSuccess().Run("rev-parse", "HEAD")
+	return strings.TrimSpace(buf.String())
 }
 
-func GitTag() string {
+func (b *B) GitTag() string {
 	buf := &bytes.Buffer{}
-	Git().WithOutput(buf).WithSuccess().Run("describe", "--always", "--dirty")
-	return strings.TrimSuffix(buf.String(), "\n")
+	b.Git().WithOutput(buf).WithSuccess().Run("describe", "--always", "--dirty")
+	return strings.TrimSpace(buf.String())
 }
 
-func GitDirty() bool {
-	Git("update-index", "-q", "--refresh")
-	return Git().WithSuccess().Run("diff-index", "--quiet", "HEAD", "--", ".")
+func (b *B) GitDirty() bool {
+	b.Git("update-index", "-q", "--refresh")
+	return b.Git().WithSuccess().Run("diff-index", "--quiet", "HEAD", "--", ".") == 0
 }
 
-func GitVersion() string {
+func (b *B) GitVersion() string {
 	buf := &bytes.Buffer{}
-	Git().WithOutput(buf).WithSuccess().Run("tag", "-l", "--points-at", "HEAD", `"v*"`)
-	return strings.TrimSuffix(buf.String(), "\n")
+	b.Git().WithOutput(buf).WithSuccess().Run("tag", "-l", "--points-at", "HEAD", `"v*"`)
+	return strings.TrimSpace(buf.String())
 }

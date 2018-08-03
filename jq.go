@@ -1,7 +1,7 @@
-package b
+package building
 
-func Jq(args ...string) Tool {
-	return MakeTool(
+func (b *B) Jq(args ...string) Tool {
+	return b.MakeTool(
 		"jq",
 		"--help",
 		"https://stedolan.github.io/jq",

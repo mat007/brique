@@ -12,7 +12,7 @@ import (
 func (b *B) Copy(destination string, sources ...string) {
 	err := copy(destination, sources)
 	if err != nil {
-		log.Fatalf("copy failed: %s", err)
+		Fatalf("copy failed: %s", err)
 	}
 }
 
