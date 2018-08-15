@@ -12,8 +12,11 @@ import (
 )
 
 var (
+	b = building.Builder()
+
 	testF   = flag.String("test.run", "", "pattern to filter the tests")
 	binName = flag.String("bin.name", "b", "name of the executable")
+	version = flag.String("version", b.GitCommit(), "version of the executable")
 )
 
 // TargetAll does everything

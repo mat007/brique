@@ -29,12 +29,25 @@ type target struct {
 	f           func(*B)
 }
 
-func NewB(root string) *B {
-	return &B{
-		root:    root,
+var b *B
+
+func Init(pkgName string) *B {
+	if b != nil {
+		panic("build.Init(...) called twice")
+	}
+	b = &B{
+		root:    pkgName,
 		targets: make(map[string]target),
 		tools:   make(map[string]Tool),
 	}
+	return b
+}
+
+func Builder() *B {
+	if b == nil {
+		panic("missing building.Init(...)")
+	}
+	return b
 }
 
 func (b *B) MakeTarget(name, description string, f func(*B)) target {

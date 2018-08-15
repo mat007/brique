@@ -26,13 +26,13 @@ func main() {
 }
 
 func run(dir string, args []string) int {
-	b := building.NewB("github.com/mat007/b")
+	b := building.Init("github.com/mat007/b")
 	g := b.Go()
 	buf := &bytes.Buffer{}
 	g.WithOutput(buf).Run("list")
 	path := strings.TrimSpace(buf.String())
 	// $$$$ MAT: parse recursively?
-	code, isMain, err := parse(dir, path)
+	mainCode, pkgCode, isMain, err := parse(dir, path)
 	if err != nil {
 		building.Fatalln("parse failed:", err)
 	}
@@ -44,13 +44,25 @@ func run(dir string, args []string) int {
 		todir = os.TempDir()
 	}
 	uuid := strings.Replace(path, "/", "_", -1)
-	file := filepath.Join(todir, uuid+"_build_main.go")
-	if err := ioutil.WriteFile(file, []byte(code), 0666); err != nil {
+	// Relies on the fact that «The declaration order of variables declared in
+	// multiple files is determined by the order in which the files are
+	// presented to the compiler» and «To ensure reproducible initialization
+	// behavior, build systems are encouraged to present multiple files
+	// belonging to the same package in lexical file name order to a compiler»
+	// See https://golang.org/ref/spec#Package_initialization
+	pkgFile := filepath.Join(dir, "aaa_"+uuid+"_build.go")
+	if err := ioutil.WriteFile(pkgFile, []byte(pkgCode), 0666); err != nil {
 		building.Fatalln("write failed:", err)
 	}
-	build := file
+	defer os.Remove(pkgFile)
+	mainFile := filepath.Join(todir, "aaa_"+uuid+"_main.go")
+	if err := ioutil.WriteFile(mainFile, []byte(mainCode), 0666); err != nil {
+		building.Fatalln("write failed:", err)
+	}
+
+	build := mainFile
 	if isMain {
-		defer os.Remove(file)
+		defer os.Remove(mainFile)
 		build = dir
 	}
 	g.Run("build", "-o", "build"+b.ExecExt(runtime.GOOS), build)
@@ -64,11 +76,11 @@ type target struct {
 	name   string
 }
 
-func parse(dir, path string) (string, bool, error) {
+func parse(dir, path string) (string, string, bool, error) {
 	fset := token.NewFileSet()
 	pkgs, err := parser.ParseDir(fset, dir, nil, parser.ParseComments)
 	if err != nil {
-		return "", false, err
+		return "", "", false, err
 	}
 	var targets []target
 	root := path + strings.TrimSuffix(strings.TrimPrefix(dir, "."), "/")
@@ -86,7 +98,7 @@ func parse(dir, path string) (string, bool, error) {
 				if isTarget(name, "Target") {
 					err := checkFunc(fset, n, "B")
 					if err != nil {
-						return "", false, err
+						return "", "", false, err
 					}
 					tgt, desc := makeTarget(name, n.Doc.Text())
 					targets = append(targets, target{
@@ -100,32 +112,39 @@ func parse(dir, path string) (string, bool, error) {
 		}
 	}
 	if len(targets) == 0 {
-		return "", false, fmt.Errorf("no targets found")
+		return "", "", false, fmt.Errorf("no targets found")
 	}
 	isMain := targets[0].pkg == "main"
-	code := `package main
+	mainCode := `package main
 
 import "github.com/mat007/b"
 `
 	if !isMain {
-		code += `import "` + root + `"
+		mainCode += `import "` + root + `"
 `
 	}
-	code += `func main() {
+	mainCode += `
+func main() {
 	defer building.CatchFailure()
-	b := building.NewB("` + root + `")
+	b := building.Builder()
 `
 	for _, t := range targets {
 		name := t.name
 		if !isMain {
 			name = t.pkg + "." + t.name
 		}
-		code += `	b.MakeTarget("` + t.target + `", "` + t.desc + `", ` + name + ")\n"
+		mainCode += `	b.MakeTarget("` + t.target + `", "` + t.desc + `", ` + name + ")\n"
 	}
-	code += `	b.Run()
+	mainCode += `	b.Run()
 }
 `
-	return code, isMain, nil
+	pkgCode := `package ` + targets[0].pkg + `
+
+import "github.com/mat007/b"
+
+var _ = building.Init("` + path + `")
+`
+	return mainCode, pkgCode, isMain, nil
 }
 
 // https://golang.org/pkg/cmd/go/internal/test/
