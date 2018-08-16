@@ -99,9 +99,7 @@ func (b *B) WithOS(f func(goos string)) {
 	}
 	wg := sync.WaitGroup{}
 	for _, goos := range platforms {
-		if *verbose {
-			log.Println("building for", goos)
-		}
+		Println("building for", goos)
 		if *parallel {
 			wg.Add(1)
 			go func(goos string) {
@@ -116,9 +114,7 @@ func (b *B) WithOS(f func(goos string)) {
 }
 
 func noApplication(name, check string) bool {
-	if *verbose {
-		log.Println("checking for", name)
-	}
+	Println("checking for", name)
 	if len(check) == 0 {
 		Fatalf("missing check for %s", name)
 	}
@@ -184,9 +180,7 @@ func (t Tool) Run(args ...string) int {
 }
 
 func (t Tool) runApplication(args []string) int {
-	if *verbose {
-		log.Println("running", t.name, args)
-	}
+	Println("running", t.name, args)
 	cmd := exec.Command(t.name, args...)
 	cmd.Env = append(os.Environ(), t.env...)
 	if !t.success {
@@ -202,9 +196,7 @@ func (t Tool) runApplication(args []string) int {
 }
 
 func (t Tool) runContainer(args []string) int {
-	if *verbose {
-		log.Println("running (container)", t.name, args)
-	}
+	Println("running (container)", t.name, args)
 	wd, err := os.Getwd()
 	if err != nil {
 		Fatalf("error running container for %s: %s", t.name, err)
@@ -220,10 +212,10 @@ func (t Tool) runContainer(args []string) int {
 	// $$$$ MAT use --net=none by default and allow to customize by tool
 	arg := append([]string{"run", "--rm", "-v", wd + ":" + w, "-w", w, "-i"}, envs...)
 	arg = append(arg, t.image(), t.name)
+	// $$$$ MAT try and replace wd in args with w
+	// $$$$ do the same with TEMPDIR -> /tmp, and mount it
 	arg = append(arg, args...)
-	if *verbose {
-		log.Println("running docker:", arg)
-	}
+	Println("running docker:", arg)
 	cmd := exec.Command("docker", arg...)
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = t.output

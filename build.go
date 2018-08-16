@@ -3,7 +3,6 @@ package building
 import (
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"sort"
 	"strings"
@@ -13,7 +12,6 @@ import (
 
 var (
 	containers = flag.Bool("c", false, "always build in containers")
-	verbose    = flag.Bool("v", false, "verbose")
 )
 
 type B struct {
@@ -61,15 +59,11 @@ func (b *B) MakeTarget(name, description string, f func(*B)) target {
 }
 
 func (b *B) Build(t target) {
-	if *verbose {
-		log.Println(">", t.name)
-	}
+	Println(">", t.name)
 	start := time.Now()
 	t.f(b)
-	if *verbose {
-		delta := time.Now().Sub(start)
-		log.Printf("< %s (took %s)", t.name, delta)
-	}
+	delta := time.Now().Sub(start)
+	Printf("< %s (took %s)", t.name, delta)
 }
 
 // func (t target) Default() target {
@@ -81,12 +75,9 @@ func (b *B) Build(t target) {
 // }
 
 func init() {
-	// manual flags parsing to enable verbose and containers before any actual work
+	// manual flags parsing to enable containers before any actual work
 	for _, arg := range os.Args {
-		switch arg {
-		case "-v":
-			*verbose = true
-		case "-c":
+		if arg == "-c" {
 			*containers = true
 		}
 	}
@@ -142,17 +133,13 @@ Options:
 		}
 	}
 
-	if *verbose {
-		log.Print("build started")
-	}
+	Print("build started")
 	start := time.Now()
 	for _, t := range runs {
 		b.Build(t)
 	}
-	if *verbose {
-		delta := time.Now().Sub(start)
-		log.Printf("build finished (took %s)", delta)
-	}
+	delta := time.Now().Sub(start)
+	Printf("build finished (took %s)", delta)
 }
 
 func (b *B) ExecExt(os string) string {

@@ -1,7 +1,6 @@
 package building
 
 import (
-	"log"
 	"os"
 	"os/exec"
 )
@@ -23,9 +22,7 @@ func (c command) WithSuccess() command {
 }
 
 func (c command) Run(args ...string) int {
-	if *verbose {
-		log.Println("running", c.name, args)
-	}
+	Println("running", c.name, args)
 	cmd := exec.Command(c.name, args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

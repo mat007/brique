@@ -1,7 +1,6 @@
 package building
 
 import (
-	"log"
 	"os"
 )
 
@@ -21,8 +20,8 @@ func remove(notify func(path string), paths ...string) error {
 	for _, match := range matches {
 		if err := os.RemoveAll(match); err != nil {
 			return err
-		} else if *verbose {
-			log.Printf("removed %q", match)
+		} else {
+			Printf("removed %q", match)
 		}
 	}
 	return nil

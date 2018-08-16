@@ -1,10 +1,22 @@
 package building
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"os"
 )
+
+var verbose = flag.Bool("v", false, "verbose")
+
+func init() {
+	// manual flags parsing to enable verbose before any actual work
+	for _, arg := range os.Args {
+		if arg == "-v" {
+			*verbose = true
+		}
+	}
+}
 
 type failure struct {
 }
@@ -32,4 +44,22 @@ func Fatal(v ...interface{}) {
 func Fatalln(v ...interface{}) {
 	log.Println(v...)
 	panic(failure{})
+}
+
+func Printf(format string, v ...interface{}) {
+	if *verbose {
+		log.Printf(format, v...)
+	}
+}
+
+func Print(v ...interface{}) {
+	if *verbose {
+		log.Print(v...)
+	}
+}
+
+func Println(v ...interface{}) {
+	if *verbose {
+		log.Println(v...)
+	}
 }

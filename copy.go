@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 )
@@ -41,9 +40,7 @@ func copy(destination string, sources []string) error {
 		}
 		dest := filepath.Join(destination, filepath.Base(source))
 		if info.IsDir() {
-			if *verbose {
-				log.Printf("copying dir %q to %q\n", source, dest)
-			}
+			Printf("copying dir %q to %q\n", source, dest)
 			if err = copyDirectory(source, dest, info.Mode()); err != nil {
 				return err
 			}
@@ -59,9 +56,7 @@ func copy(destination string, sources []string) error {
 		if err = os.MkdirAll(filepath.Dir(dest), dirInfo.Mode()); err != nil {
 			return err
 		}
-		if *verbose {
-			log.Printf("copying file %q to %q\n", source, dest)
-		}
+		Printf("copying file %q to %q\n", source, dest)
 		if err = copyFile(source, dest, info.Mode()); err != nil {
 			return err
 		}

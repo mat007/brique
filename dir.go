@@ -1,7 +1,6 @@
 package building
 
 import (
-	"log"
 	"os"
 )
 
@@ -23,8 +22,6 @@ func (b *B) Dir(dir string, f func()) {
 	if err := os.Chdir(dir); err != nil {
 		Fatalln("cannot change current directory:", err)
 	}
-	if *verbose {
-		log.Println("changed to directory", dir)
-	}
+	Println("changed to directory", dir)
 	f()
 }
