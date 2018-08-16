@@ -14,6 +14,8 @@ func init() {
 	for _, arg := range os.Args {
 		if arg == "-v" {
 			*verbose = true
+			return
+
 		}
 	}
 }

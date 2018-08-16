@@ -3,15 +3,10 @@ package building
 import (
 	"flag"
 	"fmt"
-	"os"
 	"sort"
 	"strings"
 	"sync"
 	"time"
-)
-
-var (
-	containers = flag.Bool("c", false, "always build in containers")
 )
 
 type B struct {
@@ -73,15 +68,6 @@ func (b *B) Build(t target) {
 // 	defaultTarget = t
 // 	return t
 // }
-
-func init() {
-	// manual flags parsing to enable containers before any actual work
-	for _, arg := range os.Args {
-		if arg == "-c" {
-			*containers = true
-		}
-	}
-}
 
 func (b *B) printTargets() {
 	fmt.Printf("\nTargets:\n")

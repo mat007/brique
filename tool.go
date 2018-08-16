@@ -3,6 +3,7 @@ package building
 import (
 	"archive/tar"
 	"bytes"
+	"flag"
 	"io"
 	"log"
 	"os"
@@ -15,7 +16,19 @@ import (
 
 var (
 	AlpineVersion = "3.7"
+
+	containers = flag.Bool("c", false, "always build in containers")
 )
+
+func init() {
+	// manual flags parsing to enable containers before any actual work
+	for _, arg := range os.Args {
+		if arg == "-c" {
+			*containers = true
+			return
+		}
+	}
+}
 
 type Tool struct {
 	root         string
