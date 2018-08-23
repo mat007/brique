@@ -39,14 +39,15 @@ func build(b *building.B, dir string) {
 	if err != nil {
 		building.Fatalln("parse failed:", err)
 	}
-	// If the user package is 'main' create the main file in the user folder
-	// else put it in system temporary folder.
+	uuid := strings.Replace(path, "/", "_", -1)
 	todir := dir
 	if !isMain {
-		// $$$$ MAT: does not work in container build
-		todir = os.TempDir()
+		todir = filepath.Join(dir, "b_"+uuid)
+		if err := os.MkdirAll(todir, 0755); err != nil {
+			building.Fatalln("mkdir failed:", err)
+		}
+		defer os.RemoveAll(todir)
 	}
-	uuid := strings.Replace(path, "/", "_", -1)
 	// Relies on the fact that «The declaration order of variables declared in
 	// multiple files is determined by the order in which the files are
 	// presented to the compiler» and «To ensure reproducible initialization
