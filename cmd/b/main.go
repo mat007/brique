@@ -22,11 +22,14 @@ func main() {
 	// $$$$ MAT: support some flags
 	// -o build.exe
 	// -f ./cmd/build
-	os.Exit(run("./cmd/build", os.Args[1:]))
+	dir := "./cmd/build"
+	b := building.Init("github.com/mat007/b")
+	build(b, dir)
+	code := b.Command("build").WithSuccess().Run(os.Args[1:]...)
+	os.Exit(code)
 }
 
-func run(dir string, args []string) int {
-	b := building.Init("github.com/mat007/b")
+func build(b *building.B, dir string) {
 	g := b.Go()
 	buf := &bytes.Buffer{}
 	g.WithOutput(buf).Run("list")
@@ -66,7 +69,6 @@ func run(dir string, args []string) int {
 		build = dir
 	}
 	g.Run("build", "-o", "build"+b.ExecExt(runtime.GOOS), build)
-	return b.Command("build").WithSuccess().Run(args...)
 }
 
 type target struct {
