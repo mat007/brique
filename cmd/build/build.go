@@ -2,13 +2,8 @@ package build
 
 import (
 	"flag"
-	"fmt"
-	"os"
 
-	"github.com/docker/cli/cli/command"
-	"github.com/docker/cli/cli/flags"
 	"github.com/mat007/b"
-	"github.com/mat007/b/cmd/build/internal"
 )
 
 var (
@@ -46,14 +41,4 @@ func TargetDepends(b *building.B) {
 // TargetClean cleans the build artifacts
 func TargetClean(b *building.B) {
 	b.Remove(*binName + "-*")
-}
-
-// TargetHello demos the build tool
-func TargetHello(b *building.B) {
-	fmt.Println("Hello !")
-	print.Hello()
-	dockerCli := command.NewDockerCli(os.Stdin, os.Stdout, os.Stderr, false)
-	opts := flags.NewClientOptions()
-	dockerCli.Initialize(opts)
-	fmt.Println("docker:", dockerCli.DefaultVersion())
 }
