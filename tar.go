@@ -75,7 +75,7 @@ func tarFiles(w io.Writer, dst string, srcs ...tarf) error {
 	if len(files) == 0 {
 		return fmt.Errorf("needs at least one file")
 	}
-	Println("tar", dst, files)
+	Debugln("tar", dst, files)
 	if dst != "-" {
 		if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
 			return err
@@ -117,7 +117,7 @@ func writeTarFiles(w io.Writer, srcs []tarf) error {
 				hdr.Name = filepath.ToSlash(rel)
 				if hdr.Mode%2 == 0 && isExecutable(path) {
 					hdr.Mode++
-					Println("fixed execute permissions for", hdr.Name)
+					Debugln("fixed execute permissions for", hdr.Name)
 				}
 				if err := tw.WriteHeader(hdr); err != nil {
 					return err

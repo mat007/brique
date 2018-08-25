@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"flag"
 	"io"
-	"log"
 	"os"
 	"os/exec"
 	"runtime"
@@ -17,15 +16,15 @@ import (
 var (
 	AlpineVersion = "3.7"
 
-	containers = flag.Bool("c", false, "always build in containers")
+	containers = flag.Bool("containers", false, "always build in containers")
 	cross      = flag.Bool("cross", false, "build for all platforms (linux, darwin, windows)")
 	parallel   = flag.Bool("parallel", false, "build in parallel")
 )
 
 func init() {
-	// manual flags parsing to enable containers before any actual work
+	// Manual flags parsing to enable containers before any actual work
 	for _, arg := range os.Args {
-		if arg == "-c" {
+		if arg == "-containers" {
 			*containers = true
 			return
 		}
@@ -97,8 +96,8 @@ func (b *B) makeTool(name, check, url, instructions string) Tool {
 		names:        name,
 		container:    noApplication(name, check),
 	}
-	if t.container && name != "" && url != "" {
-		log.Print("missing " + name + ": consider installing it to speed up the build, see " + url)
+	if t.container && name != "" && url != "" && !*containers {
+		Print("missing " + name + ": consider installing it to speed up the build, see " + url)
 	}
 	if t.container {
 		t.buildImage()
@@ -129,7 +128,7 @@ func (b *B) WithOS(f func(goos string)) {
 }
 
 func noApplication(name, check string) bool {
-	Println("checking for", name)
+	Debugln("checking for", name)
 	if len(check) == 0 {
 		Fatalf("missing check for %s", name)
 	}
@@ -143,11 +142,12 @@ func noApplication(name, check string) bool {
 }
 
 func (t Tool) buildImage() {
+	Debugln("building image for", t.name)
 	buf := &bytes.Buffer{}
 	tarFile(t.instructions, "Dockerfile", buf)
 	cmd := exec.Command("docker", "build", "-t", t.image(), "-")
 	cmd.Stderr = os.Stderr
-	if *verbose {
+	if isDebug() {
 		cmd.Stdout = os.Stdout
 	}
 	cmd.Stdin = buf
@@ -195,7 +195,7 @@ func (t Tool) Run(args ...string) int {
 }
 
 func (t Tool) runApplication(args []string) int {
-	Println("running", t.name, args)
+	Println("running", append([]string{t.name}, args...))
 	cmd := exec.Command(t.name, args...)
 	cmd.Env = append(os.Environ(), t.env...)
 	if !t.success {
@@ -211,7 +211,8 @@ func (t Tool) runApplication(args []string) int {
 }
 
 func (t Tool) runContainer(args []string) int {
-	Println("running (container)", t.name, args)
+	// $$$$ MAT error out if docker in windows containers mode
+	Println("running (in container)", append([]string{t.name}, args...))
 	wd, err := os.Getwd()
 	if err != nil {
 		Fatalf("error running container for %s: %s", t.name, err)
@@ -227,10 +228,11 @@ func (t Tool) runContainer(args []string) int {
 	// $$$$ MAT use --net=none by default and allow to customize by tool
 	arg := append([]string{"run", "--rm", "-v", wd + ":" + w, "-w", w, "-i"}, envs...)
 	arg = append(arg, t.image(), t.name)
-	// $$$$ MAT try and replace wd in args with w
-	// $$$$ do the same with TEMPDIR -> /tmp, and mount it
+	// $$$$ MAT try and replace wd in args with w ?
+	// $$$$ do the same with TEMPDIR -> /tmp, and mount it ? any dir ?
+	// $$$$ MAT if GOPATH set, mount it instead of wd ?
 	arg = append(arg, args...)
-	Println("running docker:", arg)
+	Debugln("running", append([]string{"docker"}, arg...))
 	cmd := exec.Command("docker", arg...)
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = t.output

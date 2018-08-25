@@ -9,7 +9,7 @@ func (b *B) Git(args ...string) Tool {
 	return b.MakeTool(
 		"git",
 		"--version",
-		"https://git-scm.com/",
+		"https://git-scm.com",
 		`
 FROM alpine:`+AlpineVersion+`
 RUN apk add --no-cache git`,

@@ -2,20 +2,24 @@ package building
 
 import (
 	"flag"
-	"fmt"
 	"log"
 	"os"
 )
 
-var verbose = flag.Bool("v", false, "verbose")
+var (
+	quiet   = flag.Bool("q", false, "quiet")
+	verbose = flag.Bool("v", false, "verbose")
+)
 
 func init() {
-	// manual flags parsing to enable verbose before any actual work
+	// Manual flags parsing to disable logging before calling the target
+	// functions unless -v is passed.
+	*quiet = true
 	for _, arg := range os.Args {
 		if arg == "-v" {
 			*verbose = true
+			*quiet = false
 			return
-
 		}
 	}
 }
@@ -26,7 +30,8 @@ type failure struct {
 func CatchFailure() {
 	if e := recover(); e != nil {
 		if _, ok := e.(failure); ok {
-			fmt.Print("\nBuild failed\n")
+			// $$$$ MAT: print stack trace
+			log.Print("build failed")
 			os.Exit(1)
 		}
 		panic(e)
@@ -49,19 +54,50 @@ func Fatalln(v ...interface{}) {
 }
 
 func Printf(format string, v ...interface{}) {
-	if *verbose {
+	if isInfo() {
 		log.Printf(format, v...)
 	}
 }
 
 func Print(v ...interface{}) {
-	if *verbose {
+	if isInfo() {
 		log.Print(v...)
 	}
 }
 
 func Println(v ...interface{}) {
-	if *verbose {
+	if isInfo() {
 		log.Println(v...)
 	}
+}
+
+func Debugf(format string, v ...interface{}) {
+	if isDebug() {
+		log.Printf(format, v...)
+	}
+}
+
+func Debug(v ...interface{}) {
+	if isDebug() {
+		log.Print(v...)
+	}
+}
+
+func Debugln(v ...interface{}) {
+	if isDebug() {
+		log.Println(v...)
+	}
+}
+
+func isInfo() bool {
+	return !*quiet
+}
+
+func isDebug() bool {
+	return isInfo() && *verbose
+}
+
+func Quiet() {
+	*verbose = false
+	*quiet = true
 }
