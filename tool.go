@@ -195,7 +195,7 @@ func (t Tool) Run(args ...string) int {
 }
 
 func (t Tool) runApplication(args []string) int {
-	Println("running", t.name, args)
+	Println("running", append([]string{t.name}, args...))
 	cmd := exec.Command(t.name, args...)
 	cmd.Env = append(os.Environ(), t.env...)
 	if !t.success {
@@ -211,7 +211,7 @@ func (t Tool) runApplication(args []string) int {
 }
 
 func (t Tool) runContainer(args []string) int {
-	Println("running (container)", t.name, args)
+	Println("running (container)", append([]string{t.name}, args...))
 	wd, err := os.Getwd()
 	if err != nil {
 		Fatalf("error running container for %s: %s", t.name, err)

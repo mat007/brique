@@ -2,7 +2,6 @@ package building
 
 import (
 	"flag"
-	"fmt"
 	"log"
 	"os"
 )
@@ -15,7 +14,6 @@ func init() {
 		if arg == "-v" {
 			*verbose = true
 			return
-
 		}
 	}
 }
@@ -26,7 +24,8 @@ type failure struct {
 func CatchFailure() {
 	if e := recover(); e != nil {
 		if _, ok := e.(failure); ok {
-			fmt.Print("\nBuild failed\n")
+			// $$$$ MAT: print stack trace
+			Print("build failed")
 			os.Exit(1)
 		}
 		panic(e)
