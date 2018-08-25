@@ -18,6 +18,8 @@ var (
 	AlpineVersion = "3.7"
 
 	containers = flag.Bool("c", false, "always build in containers")
+	cross      = flag.Bool("cross", false, "build for all platforms (linux, darwin, windows)")
+	parallel   = flag.Bool("parallel", false, "build in parallel")
 )
 
 func init() {
