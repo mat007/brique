@@ -18,6 +18,7 @@ import (
 )
 
 func main() {
+	building.Quiet()
 	defer building.CatchFailure()
 	// $$$$ MAT: support some flags
 	// -o build.exe

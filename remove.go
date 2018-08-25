@@ -21,7 +21,7 @@ func remove(notify func(path string), paths ...string) error {
 		if err := os.RemoveAll(match); err != nil {
 			return err
 		} else {
-			Printf("removed %q", match)
+			Debugf("removed %q", match)
 		}
 	}
 	return nil

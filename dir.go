@@ -22,6 +22,6 @@ func (b *B) Dir(dir string, f func()) {
 	if err := os.Chdir(dir); err != nil {
 		Fatalln("cannot change current directory:", err)
 	}
-	Println("changed to directory", dir)
+	Debugln("changed to directory", dir)
 	f()
 }
