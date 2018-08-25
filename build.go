@@ -10,10 +10,11 @@ import (
 )
 
 type B struct {
-	root    string
-	targets map[string]target
-	tools   map[string]Tool
-	mutex   sync.Mutex
+	root          string
+	targets       map[string]target
+	defaultTarget *target
+	tools         map[string]Tool
+	mutex         sync.Mutex
 }
 
 type target struct {
@@ -50,6 +51,9 @@ func (b *B) MakeTarget(name, description string, f func(*B)) target {
 		f:           f,
 	}
 	b.targets[name] = t
+	if b.defaultTarget == nil {
+		b.defaultTarget = &t
+	}
 	return t
 }
 
@@ -60,14 +64,6 @@ func (b *B) Build(t target) {
 	delta := time.Now().Sub(start)
 	Printf("< %s (took %s)", t.name, delta)
 }
-
-// func (t target) Default() target {
-// 	if defaultTarget.f != nil {
-// 		Fatalf("%s cannot be set as default: %s already set", t.name, defaultTarget.name)
-// 	}
-// 	defaultTarget = t
-// 	return t
-// }
 
 func (b *B) printTargets() {
 	fmt.Printf("\nTargets:\n")
@@ -105,11 +101,10 @@ Options:
 	var runs []target
 	args := flag.Args()
 	if len(args) == 0 {
-		Fatal("no target specified")
-		// if defaultTarget.f == nil {
-		// 	Fatal("missing default target")
-		// }
-		// runs = append(runs, defaultTarget)
+		if b.defaultTarget == nil {
+			Fatal("no target defined")
+		}
+		runs = append(runs, *b.defaultTarget)
 	}
 	for _, a := range args {
 		if t, ok := b.targets[a]; ok {
