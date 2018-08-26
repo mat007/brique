@@ -7,11 +7,12 @@ import (
 )
 
 var (
-	quiet   = flag.Bool("q", false, "quiet")
-	verbose = flag.Bool("v", false, "verbose")
+	quiet   = flag.Bool("q", false, "quiet output")
+	verbose = flag.Bool("v", false, "verbose output")
 )
 
 func init() {
+	log.SetFlags(0)
 	// Manual flags parsing to disable logging before calling the target
 	// functions unless -v is passed.
 	*quiet = true
