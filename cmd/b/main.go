@@ -70,7 +70,7 @@ func build(b *building.B, dir string) {
 		defer os.Remove(mainFile)
 		build = dir
 	}
-	g.Run("build", "-o", "build"+b.ExecExt(runtime.GOOS), build)
+	g.Run("build", "-o", "build"+b.Exe(runtime.GOOS), build)
 }
 
 type target struct {

@@ -124,7 +124,7 @@ Options:
 	Printf("build finished (took %s)", delta)
 }
 
-func (b *B) ExecExt(os string) string {
+func (b *B) Exe(os string) string {
 	if os == "windows" {
 		return ".exe"
 	}

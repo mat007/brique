@@ -24,7 +24,7 @@ func TargetAll(b *building.B) {
 func TargetBin(b *building.B) {
 	b.WithOS(func(goos string) {
 		b.Go().WithEnv("GOOS="+goos, "CGO_ENABLED=0").
-			Run("build", "-ldflags=-s -w", "-o", *binName+"-"+goos+b.ExecExt(goos), "./cmd/b")
+			Run("build", "-ldflags=-s -w", "-o", *binName+"-"+goos+b.Exe(goos), "./cmd/b")
 	})
 }
 
