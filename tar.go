@@ -55,9 +55,26 @@ func (t tarr) Run(args ...string) {
 	if t.output == nil {
 		t.output = os.Stdout
 	}
-	if err := tarFiles(t.output, args[0], t.files...); err != nil {
-		Fatalln("tar failed:", err)
+	// $$$$ MAT if args[0] has no $(GOOS) make a combined list of the files to tar in a single dest
+	close := make(chan int)
+	go withOS(close, isCross(args), func(goos string) {
+		dst := replaceVar(args[0], goos)
+		files := replaceTarfs(t.files, goos)
+		if err := tarFiles(t.output, dst, files...); err != nil {
+			Fatalln("tar failed:", err)
+		}
+	})
+	<-close
+}
+
+func replaceTarfs(files []tarf, goos string) []tarf {
+	var replaced []tarf
+	for _, f := range files {
+		f.dir = replaceVar(f.dir, goos)
+		f.files = replaceVars(f.files, goos)
+		replaced = append(replaced, f)
 	}
+	return replaced
 }
 
 func tarFiles(w io.Writer, dst string, srcs ...tarf) error {

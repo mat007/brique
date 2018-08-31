@@ -181,6 +181,56 @@ func tarFile(content, filename string, writer io.Writer) {
 }
 
 func (t Tool) Run(args ...string) int {
+	codes := make(chan int)
+	go withOS(codes, isCross(args), func(goos string) {
+		rargs := replaceVars(args, goos)
+		codes <- t.run(rargs)
+	})
+	code := 0
+	for {
+		if c, ok := <-codes; !ok {
+			break
+		} else if c != 0 {
+			code = c
+		}
+	}
+	return code
+}
+
+func isCross(args []string) bool {
+	if *cross {
+		for _, arg := range args {
+			if strings.Contains(arg, "$(GOOS)") {
+				return true
+				break
+			}
+		}
+	}
+	return false
+}
+
+func replaceVars(args []string, goos string) []string {
+	var replaced []string
+	for _, arg := range args {
+		replaced = append(replaced, replaceVar(arg, goos))
+	}
+	return replaced
+}
+
+func replaceVar(arg string, goos string) string {
+	arg = strings.Replace(arg, "$(GOOS)", goos, -1)
+	arg = strings.Replace(arg, "$(EXE)", exe(goos), -1)
+	return arg
+}
+
+func exe(goos string) string {
+	if goos == "windows" {
+		return ".exe"
+	}
+	return ""
+}
+
+func (t Tool) run(args []string) int {
 	if t.output == nil {
 		t.output = os.Stdout
 	}
@@ -191,6 +241,28 @@ func (t Tool) Run(args ...string) int {
 		return t.runContainer(args)
 	}
 	return t.runApplication(args)
+}
+
+func withOS(done chan int, cross bool, f func(goos string)) {
+	platforms := []string{runtime.GOOS}
+	if cross {
+		platforms = []string{"linux", "darwin", "windows"}
+	}
+	wg := sync.WaitGroup{}
+	for _, goos := range platforms {
+		Println("building for", goos)
+		if *parallel {
+			wg.Add(1)
+			go func(goos string) {
+				f(goos)
+				wg.Done()
+			}(goos)
+		} else {
+			f(goos)
+		}
+	}
+	wg.Wait()
+	close(done)
 }
 
 func (t Tool) runApplication(args []string) int {

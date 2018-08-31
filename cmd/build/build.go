@@ -22,10 +22,7 @@ func TargetAll(b *building.B) {
 
 // TargetBin builds the binaries
 func TargetBin(b *building.B) {
-	b.WithOS(func(goos string) {
-		b.Go().WithEnv("GOOS="+goos, "CGO_ENABLED=0").
-			Run("build", "-ldflags=-s -w", "-o", *binName+"-"+goos+b.ExecExt(goos), "./cmd/b")
-	})
+	b.Go("build", "-ldflags=-s -w", "-o", *binName+"-$(GOOS)$(EXE)", "./cmd/b")
 }
 
 // TargetTest runs the tests
