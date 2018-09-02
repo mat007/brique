@@ -1,33 +1,25 @@
 @echo off
 
-rem set the project package name
-set PACKAGE_NAME=github.com/mat007/b
-rem in a user project this would point to the vendored folder
-set BUILD_TOOL=./cmd/b
+rem set this to the build tool version
+VERSION=v0.0.1
 
-rem configure current platform
-set MSYS_NO_PATHCONV=1
-set GOOS=windows
+rem test if the build tool is available
+if exist .\b.exe (
+    .\b.exe %*
+    exit /b %errorlevel%
+)
 
-rem test if go is available
-go version >nul 2>nul
-if errorlevel 1 goto docker
-rem build the build tool directly
-go build %BUILD_TOOL% && b.exe %*
-goto end
-
-:docker
 rem test if docker is available
 docker version >nul 2>nul
-if errorlevel 1 goto error
-rem build the build tool in a container
-docker run --rm -t -v%cd%:/go/src/%PACKAGE_NAME% -e GOOS=%GOOS% ^
-    -w /go/src/%PACKAGE_NAME% golang:1.10.3-alpine3.7 go build %BUILD_TOOL% ^
-    && b.exe %*
-goto end
+if errorlevel 1 (
+    echo Either b ^(https://github.com/mat007/b^) or docker ^(http://www.docker.com^) needed to build.
+    exit /b 1
+)
 
-:error
-echo Either go ^(http://golang.org^) or docker ^(http://www.docker.com^) needed to build.
-exit /b 1
+rem download the build tool in a container
+docker run --rm -t -v "%cd%":/pwd -w /pwd appropriate/curl curl --fail -o b.exe https://github.com/mat007/b/releases/download/$VERSION/b-windows.exe
+if errorlevel 1 (
+    exit /b %errorlevel%
+)
 
-:end
+.\b.exe %*
