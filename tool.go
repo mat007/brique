@@ -142,7 +142,7 @@ func noApplication(name, check string) bool {
 }
 
 func (t Tool) buildImage() {
-	Debugln("building image for", t.name)
+	Println("preparing image for", t.name)
 	buf := &bytes.Buffer{}
 	tarFile(t.instructions, "Dockerfile", buf)
 	cmd := exec.Command("docker", "build", "-t", t.image(), "-")
