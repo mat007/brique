@@ -7,9 +7,8 @@ func (b *B) Dep(args ...string) Tool {
 		"dep",
 		"version",
 		"https://github.com/golang/dep",
-		`
-FROM alpine:`+AlpineVersion+`
-RUN apk add --no-cache curl && \
+		"FROM golang:"+GoVersion+"-alpine"+AlpineVersion+`
+RUN apk add --no-cache git curl && \
     curl -o /usr/bin/dep -L https://github.com/golang/dep/releases/download/`+DepVersion+`/dep-linux-amd64 && \
     chmod +x /usr/bin/dep`,
 		args...)
