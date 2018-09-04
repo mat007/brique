@@ -14,7 +14,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/mat007/b"
+	"github.com/mat007/brique"
 )
 
 func main() {
@@ -24,7 +24,7 @@ func main() {
 	// -o build.exe
 	// -f ./cmd/build
 	dir := "./cmd/build"
-	b := building.Init("github.com/mat007/b")
+	b := building.Init("github.com/mat007/brique")
 	build(b, dir)
 	code := b.Command("build").WithSuccess().Run(os.Args[1:]...)
 	os.Exit(code)
@@ -121,7 +121,7 @@ func parse(dir, path string) (string, string, bool, error) {
 	isMain := targets[0].pkg == "main"
 	mainCode := `package main
 
-import "github.com/mat007/b"
+import "github.com/mat007/brique"
 `
 	if !isMain {
 		mainCode += `import "` + root + `"
@@ -144,7 +144,7 @@ func main() {
 `
 	pkgCode := `package ` + targets[0].pkg + `
 
-import "github.com/mat007/b"
+import "github.com/mat007/brique"
 
 var _ = building.Init("` + path + `")
 `

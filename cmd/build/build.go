@@ -3,7 +3,7 @@ package build
 import (
 	"flag"
 
-	"github.com/mat007/b"
+	"github.com/mat007/brique"
 )
 
 var (

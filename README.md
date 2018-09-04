@@ -81,9 +81,9 @@ $ b
 build started
 > all
 running [go test -test.run  ./...]
-ok      github.com/mat007/b     (cached)
-ok      github.com/mat007/b/cmd/b       (cached)
-?       github.com/mat007/b/cmd/build   [no test files]
+ok      github.com/mat007/brique     (cached)
+ok      github.com/mat007/brique/cmd/b       (cached)
+?       github.com/mat007/brique/cmd/build   [no test files]
 building for windows
 running [go build -ldflags=-s -w -o b-windows.exe ./cmd/b]
 < all (took 3.5919863s)

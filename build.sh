@@ -17,15 +17,15 @@ fi
 if [ ! -x "$(command -v ./b)" ]; then
     # test if curl is available ?
     if [ -x "$(command -v curl)" ]; then
-        curl --fail -o b$EXE https://github.com/mat007/b/releases/download/$VERSION/b-$GOOS$EXE
+        curl --fail -o b$EXE https://github.com/mat007/brique/releases/download/$VERSION/b-$GOOS$EXE
     else
         # test if docker is available
         if [ -x "$(command -v docker)" ]; then
             # download the build tool in a container
             docker run --rm -t -v "$(pwd)":/pwd \
-                -w /pwd appropriate/curl curl --fail -o b$EXE https://github.com/mat007/b/releases/download/$VERSION/b-$GOOS$EXE
+                -w /pwd appropriate/curl curl --fail -o b$EXE https://github.com/mat007/brique/releases/download/$VERSION/b-$GOOS$EXE
         else
-            echo "Either b (https://github.com/mat007/b), curl or docker (http://www.docker.com) is needed to build."
+            echo "Either b (https://github.com/mat007/brique), curl or docker (http://www.docker.com) is needed to build."
             exit 1
         fi
     fi
