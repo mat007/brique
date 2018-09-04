@@ -81,13 +81,13 @@ $ b
 build started
 > all
 running [go test -test.run  ./...]
-ok      github.com/mat007/brique     (cached)
-ok      github.com/mat007/brique/cmd/b       (cached)
-?       github.com/mat007/brique/cmd/build   [no test files]
+ok      github.com/mat007/brique        0.192s
+?       github.com/mat007/brique/cmd/b  [no test files]
+?       github.com/mat007/brique/cmd/build      [no test files]
 building for windows
 running [go build -ldflags=-s -w -o b-windows.exe ./cmd/b]
-< all (took 3.5919863s)
-build finished (took 3.5929954s)
+< all (took 1.5311602s)
+build finished (took 1.5316828s)
 ```
 
 ## Where to go next with Brique?
