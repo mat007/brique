@@ -15,16 +15,17 @@ Brique aims at unifying all this by making it possible to use Go as the build co
 
 ## What is Brique?
 
-Brique is a build tool for Go projects made of two parts:
+Brique is a build tool for Go projects made of three parts:
 * a Go binary called `b` (or `b.exe` on Windows) which creates and invokes on the fly a custom binary specifically tailored to build each project
-* a Go library of bricks as a `building` package to help with implementing the build features needed by each project
+* a Go package of bricks (called `building`) to help with implementing the build features needed by each project
+* a Shell and a Batch script to bootstrap the build and allow to vendor the whole tool chain in each project
 
 The goal of Brique is to create a build environment which is:
-* multi-platform (single code, cross-compilation, parallel builds)
 * with a low barrier of entry (build written in Go, no tool chain to install)
-* build server friendly (reproducible, cleans after itself, no requirements other than `Docker`)
-* extensible (linters, coverage, release, signing, …)
 * fast (especially when nothing needs to be done)
+* extensible (linters, coverage, release, signing, …)
+* multi-platform (single code, cross-compilation, parallel builds)
+* build server friendly (reproducible, cleans after itself, no requirements other than `Docker`)
 
 Using containers provides a nice way to fulfill most of these requirements, however they tend to be slow:  either project files must be baked into an image and artifacts copied back from a container, or volumes must be mounted to share project files with a container and they are quite slow (on Windows mainly and Darwin also).
 
@@ -37,18 +38,16 @@ Brique provides a library of build tools wrappers and is very easy to extend wit
 
 ## How to get started with Brique?
 
-Of course Brique builds itself!
+Of course Brique can be used on itself!
 
 For a quick glance at a project build code using Brique look at [cmd/build/build.go](cmd/build/build.go).
 
-To find out how to build simply invoke `b` at the root of the project with the `-help` flag:
+To find out how to build simply invoke `./build.sh` or `build.bat` at the root of the project with the `-help` flag:
 ```
-$ b -help
+$ ./build.sh -help
 Usage: build [OPTIONS] [TARGETS]
 
 Options:
-  -bin.name string
-        name of the executable (default "b")
   -containers
         always build in containers
   -cross
@@ -59,36 +58,53 @@ Options:
   -test.run string
         pattern to filter the tests
   -v    verbose output
-  -version string
-        version of the executable (default "774d33e7c721570a2618b5fe2a45733a68e03e44")
 
 Targets:
   all   does everything
-  bin   builds the binaries
-  clean cleans the build artifacts
   depends
         retrieves the dependencies
   test  runs the tests
-  ```
+```
 
-This output gets generated on the fly, a bit like what `go test` does with parsing files ending in `_test.go` to extract test functions matching the test designated signature, except here `b` looks for `func TargetXyz(b *building.B)`.
+This output gets generated on the fly, a bit like what `go test` does with parsing files ending in `_test.go` to extract test functions matching the test designated signature, except here Brique looks for an exported `func Xyz(b *building.B)`.
 
 The comments above target functions are used as descriptions for the targets listed in the help.
 
-The first target in the Go build file becomes the default one, meaning here calling `b` with no argument will invoke the `all` target, e.g. on Windows:
+The first target in the Go build file becomes the default one, meaning here calling `./build.sh` or `build.bat` with no argument will invoke the `all` target, e.g.:
 ```
-$ b
+$ ./build.sh
 build started
 > all
+running [dep ensure]
 running [go test -test.run  ./...]
-ok      github.com/mat007/brique        0.192s
-?       github.com/mat007/brique/cmd/b  [no test files]
+ok      github.com/mat007/brique        (cached)
 ?       github.com/mat007/brique/cmd/build      [no test files]
-building for windows
-running [go build -ldflags=-s -w -o b-windows.exe ./cmd/b]
-< all (took 1.5311602s)
-build finished (took 1.5316828s)
+< all (took 19.5013775s)
+build finished (took 19.503879s)
 ```
+
+## How to use Brique?
+
+Brique releases no binary because it's designed to be entirely vendored.
+
+To add Brique to a project follow these steps:
+* Add both [build.sh](build.sh) and [build.bat](build.bat) to the project root folder
+* In both `build.sh` and `build.bat` change the `PACKAGE_NAME` variable to the project package name
+* Create a file `cmd/build/build.go` with the content:
+```go
+package build
+
+import (
+	"github.com/mat007/brique"
+)
+
+// All does everything
+func All(b *building.B) {
+	fmt.Println("OK!)
+}
+```
+* Use your vendoring tool to bring Brique in
+* Test by invoking `build.sh` or `build.bat` from the project root folder
 
 ## Where to go next with Brique?
 
