@@ -3,13 +3,13 @@ package building
 import "testing"
 
 func TestMakeTarget(t *testing.T) {
-	checkMakeTarget(t, "TargetAll", "all")
-	checkMakeTarget(t, "TargetAllStuff", "all-stuff")
-	checkMakeTarget(t, "TargetHTTP", "http")
-	checkMakeTarget(t, "TargetAllHTTP", "all-http")
+	checkMakeTarget(t, "All", "all")
+	checkMakeTarget(t, "AllStuff", "all-stuff")
+	checkMakeTarget(t, "HTTP", "http")
+	checkMakeTarget(t, "AllHTTP", "all-http")
 	// $$$$ MAT: enhance camel to kebab conversion
-	// checkMakeTarget(t, "TargetHTTPThings", "http-things")
-	// checkMakeTarget(t, "TargetAllHTTPThings", "all-http-things")
+	// checkMakeTarget(t, "HTTPThings", "http-things")
+	// checkMakeTarget(t, "AllHTTPThings", "all-http-things")
 }
 
 func checkMakeTarget(t *testing.T, name, expected string) {

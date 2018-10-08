@@ -97,7 +97,7 @@ func parse(dir, path string) (string, string, bool, error) {
 					continue
 				}
 				name := n.Name.String()
-				if isTarget(name, "Target") {
+				if isExported(name) {
 					err := checkFunc(fset, n, "B")
 					if err != nil {
 						return "", "", false, err
@@ -149,15 +149,8 @@ var _ = building.Init("` + path + `")
 	return mainCode, pkgCode, isMain, nil
 }
 
-// https://golang.org/pkg/cmd/go/internal/test/
-func isTarget(name, prefix string) bool {
-	if !strings.HasPrefix(name, prefix) {
-		return false
-	}
-	if len(name) == len(prefix) {
-		return true
-	}
-	c, _ := utf8.DecodeRuneInString(name[len(prefix):])
+func isExported(name string) bool {
+	c, _ := utf8.DecodeRuneInString(name)
 	return !unicode.IsLower(c)
 }
 
@@ -166,7 +159,7 @@ func checkFunc(fset *token.FileSet, fn *ast.FuncDecl, arg string) error {
 	if !isFunc(fn, arg) {
 		name := fn.Name.String()
 		pos := fset.Position(fn.Pos())
-		return fmt.Errorf("%s: wrong signature for %s, must be: func %s(%s *%s)",
+		return fmt.Errorf("%s: wrong signature for %s, must be: func %s(%s *%s) or not exported",
 			pos, name, name, strings.ToLower(arg), arg)
 	}
 	return nil
@@ -207,7 +200,6 @@ func makeTarget(name, doc string) (string, string) {
 }
 
 func makeTargetName(name string) string {
-	name = strings.TrimPrefix(name, "Target")
 	target := ""
 	upper := true
 	for _, c := range name {

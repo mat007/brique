@@ -9,36 +9,36 @@ import (
 var (
 	b = building.Builder()
 
-	testF   = flag.String("test.run", "", "pattern to filter the tests")
-	binName = flag.String("bin.name", "b", "name of the executable")
-	version = flag.String("version", b.GitCommit(), "version of the executable")
+	output  = flag.String("o", "b", "name of the produced binary")
+	testRun = flag.String("test.run", "", "pattern to filter the tests")
+	version = flag.String("version", b.GitCommit(), "version of the binary")
 )
 
-// TargetAll does everything
-func TargetAll(b *building.B) {
-	TargetTest(b)
-	TargetBin(b)
+// All does everything
+func All(b *building.B) {
+	Test(b)
+	Bin(b)
 }
 
-// TargetBin builds the binaries
-func TargetBin(b *building.B) {
+// Bin builds the binaries
+func Bin(b *building.B) {
 	b.WithOS(func(goos string) {
 		b.Go().WithEnv("GOOS="+goos, "CGO_ENABLED=0").
-			Run("build", "-ldflags=-s -w", "-o", *binName+"-"+goos+b.Exe(goos), "./cmd/b")
+			Run("build", "-ldflags=-s -w", "-o", *output+"-"+goos+b.Exe(goos), "./cmd/b")
 	})
 }
 
-// TargetTest runs the tests
-func TargetTest(b *building.B) {
-	b.Go("test", "-test.run", *testF, "./...")
+// Test runs the tests
+func Test(b *building.B) {
+	b.Go("test", "-test.run", *testRun, "./...")
 }
 
-// TargetDepends retrieves the dependencies
-func TargetDepends(b *building.B) {
+// Depends retrieves the dependencies
+func Depends(b *building.B) {
 	b.Dep("ensure")
 }
 
-// TargetClean cleans the build artifacts
-func TargetClean(b *building.B) {
-	b.Remove(*binName + "-*")
+// Clean cleans the build artifacts
+func Clean(b *building.B) {
+	b.Remove(*output + "-*")
 }
