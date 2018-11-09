@@ -10,10 +10,14 @@ type command struct {
 	success bool
 }
 
-func (b *B) Command(name string) command {
-	return command{
+func (b *B) Command(name string, args ...string) command {
+	c := command{
 		name: name,
 	}
+	if len(args) > 0 {
+		c.Run(args...)
+	}
+	return c
 }
 
 func (c command) WithSuccess() command {
