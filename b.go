@@ -16,7 +16,7 @@ import (
 )
 
 func Main() {
-	Quiet()
+	ForceQuiet()
 	defer CatchFailure()
 	// $$$$ MAT: support some flags
 	// -o build.exe

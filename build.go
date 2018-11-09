@@ -96,7 +96,7 @@ Options:
 		flag.PrintDefaults()
 		b.printTargets()
 	}
-	*quiet = false
+	*Quiet = false
 	flag.Parse()
 
 	var runs []target

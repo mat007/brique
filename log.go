@@ -7,19 +7,19 @@ import (
 )
 
 var (
-	quiet   = flag.Bool("q", false, "quiet output")
-	verbose = flag.Bool("v", false, "verbose output")
+	Quiet   = flag.Bool("q", false, "quiet output")
+	Verbose = flag.Bool("v", false, "verbose output")
 )
 
 func init() {
 	log.SetFlags(0)
 	// Manual flags parsing to disable logging before calling the target
 	// functions unless -v is passed.
-	*quiet = true
+	*Quiet = true
 	for _, arg := range os.Args {
 		if arg == "-v" {
-			*verbose = true
-			*quiet = false
+			*Verbose = true
+			*Quiet = false
 			return
 		}
 	}
@@ -91,14 +91,14 @@ func Debugln(v ...interface{}) {
 }
 
 func isInfo() bool {
-	return !*quiet
+	return !*Quiet
 }
 
 func isDebug() bool {
-	return isInfo() && *verbose
+	return isInfo() && *Verbose
 }
 
-func Quiet() {
-	*verbose = false
-	*quiet = true
+func ForceQuiet() {
+	*Verbose = false
+	*Quiet = true
 }
