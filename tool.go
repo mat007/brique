@@ -129,10 +129,10 @@ func (b *B) WithOS(f func(goos string)) {
 
 func noApplication(name, check string) bool {
 	Debugln("checking for", name)
-	if len(check) == 0 {
-		Fatalf("missing check for %s", name)
+	cmd := exec.Command(name)
+	if check != "" {
+		cmd = exec.Command(name, check)
 	}
-	cmd := exec.Command(name, check)
 	err := cmd.Run()
 	if err == nil {
 		return *containers
