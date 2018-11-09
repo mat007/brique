@@ -19,8 +19,8 @@ func TestTarTree(t *testing.T) {
 
 	dst := filepath.Join(rootDirectory.Path(), "destination", "dst.tar")
 	err := tarFiles(nil, dst,
-		tarf{dir: rootDirectory.Path() + "/source", files: []string{"foo.txt"}},
-		tarf{dir: rootDirectory.Path(), files: []string{"source/bar"}})
+		filesets{dir: rootDirectory.Path() + "/source", files: []string{"foo.txt"}},
+		filesets{dir: rootDirectory.Path(), files: []string{"source/bar"}})
 	assert.NilError(t, err)
 	err = untarFiles(dst, filepath.Join(rootDirectory.Path(), "destination"))
 	assert.NilError(t, err)
@@ -48,7 +48,7 @@ func TestTarTreeWithGlob(t *testing.T) {
 	defer rootDirectory.Remove()
 
 	dst := filepath.Join(rootDirectory.Path(), "destination", "dst.tar")
-	err := tarFiles(nil, dst, tarf{dir: rootDirectory.Path(), files: []string{"source/*"}})
+	err := tarFiles(nil, dst, filesets{dir: rootDirectory.Path(), files: []string{"source/*"}})
 	assert.NilError(t, err)
 	err = untarFiles(dst, filepath.Join(rootDirectory.Path(), "destination"))
 	assert.NilError(t, err)
@@ -77,7 +77,7 @@ func TestTarTreeWithEmptyGlob(t *testing.T) {
 
 	dst := filepath.Join(rootDirectory.Path(), "destination", "dst.tar")
 	src := "source/non-existing*"
-	err := tarFiles(nil, dst, tarf{dir: rootDirectory.Path(), files: []string{src}})
+	err := tarFiles(nil, dst, filesets{dir: rootDirectory.Path(), files: []string{src}})
 	assert.Error(t, err, fmt.Sprintf("file %q does not exist", src))
 }
 
@@ -91,7 +91,7 @@ func TestGzipTarTree(t *testing.T) {
 
 	dst := filepath.Join(rootDirectory.Path(), "destination", "dst.tar.gz")
 	err := tarFiles(nil, dst,
-		tarf{dir: rootDirectory.Path(), files: []string{"source/foo.txt", "source/bar"}})
+		filesets{dir: rootDirectory.Path(), files: []string{"source/foo.txt", "source/bar"}})
 	assert.NilError(t, err)
 	err = untarFiles(dst, filepath.Join(rootDirectory.Path(), "destination"))
 	assert.NilError(t, err)

@@ -10,32 +10,32 @@ import (
 	"path/filepath"
 )
 
-type tarr struct {
+type archive struct {
 	output io.Writer
-	files  []tarf
+	files  []filesets
 }
 
-type tarf struct {
+type filesets struct {
 	dir   string
 	files []string
 }
 
-func (b *B) Tar(args ...string) tarr {
-	t := tarr{}
+func (b *B) Tar(args ...string) archive {
+	t := archive{}
 	if len(args) > 0 {
 		t.Run(args...)
 	}
 	return t
 }
 
-func (t tarr) WithOutput(w io.Writer) tarr {
+func (t archive) WithOutput(w io.Writer) archive {
 	t.output = w
 	return t
 }
 
-func (t tarr) WithFiles(dir string, files ...string) tarr {
+func (t archive) WithFiles(dir string, files ...string) archive {
 	if len(files) > 0 {
-		t.files = append(t.files, tarf{
+		t.files = append(t.files, filesets{
 			dir:   dir,
 			files: files,
 		})
@@ -43,12 +43,12 @@ func (t tarr) WithFiles(dir string, files ...string) tarr {
 	return t
 }
 
-func (t tarr) Run(args ...string) {
+func (t archive) Run(args ...string) {
 	if len(args) == 0 {
 		Fatal("tar failed: needs at least one argument")
 	}
 	if len(args[1:]) > 0 {
-		t.files = append(t.files, tarf{
+		t.files = append(t.files, filesets{
 			files: args[1:],
 		})
 	}
@@ -60,14 +60,14 @@ func (t tarr) Run(args ...string) {
 	}
 }
 
-func tarFiles(w io.Writer, dst string, srcs ...tarf) error {
-	files := []tarf{}
+func tarFiles(w io.Writer, dst string, srcs ...filesets) error {
+	files := []filesets{}
 	for _, f := range srcs {
 		matches, err := glob(f.dir, f.files, true)
 		if err != nil {
 			return err
 		}
-		files = append(files, tarf{
+		files = append(files, filesets{
 			dir:   f.dir,
 			files: matches,
 		})
@@ -96,7 +96,7 @@ func tarFiles(w io.Writer, dst string, srcs ...tarf) error {
 	return writeTarFiles(w, files)
 }
 
-func writeTarFiles(w io.Writer, srcs []tarf) error {
+func writeTarFiles(w io.Writer, srcs []filesets) error {
 	tw := tar.NewWriter(w)
 	defer tw.Close()
 	for _, src := range srcs {

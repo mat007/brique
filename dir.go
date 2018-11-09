@@ -2,6 +2,7 @@ package building
 
 import (
 	"os"
+	"path/filepath"
 )
 
 func (b *B) Dir(dir string, f func()) {
@@ -14,6 +15,7 @@ func (b *B) Dir(dir string, f func()) {
 		if err = os.Chdir(wd); err != nil {
 			Fatalln("cannot change back current directory:", err)
 		}
+		Debugln("changed to directory", wd)
 	}()
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		Fatalln("cannot create directory:", err)
@@ -21,6 +23,9 @@ func (b *B) Dir(dir string, f func()) {
 	// $$$$ MAT: does not work in container build because the working dir gets mounted as root
 	if err := os.Chdir(dir); err != nil {
 		Fatalln("cannot change current directory:", err)
+	}
+	if !filepath.IsAbs(dir) {
+		dir = filepath.Join(wd, dir)
 	}
 	Debugln("changed to directory", dir)
 	f()
