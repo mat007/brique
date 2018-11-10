@@ -4,82 +4,23 @@ import (
 	"archive/tar"
 	"compress/gzip"
 	"debug/elf"
-	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 )
 
-type archive struct {
-	output io.Writer
-	files  []filesets
+func (b *B) Tar(args ...string) compression {
+	return makeCompression(Tar{}, args)
 }
 
-type filesets struct {
-	dir   string
-	files []string
+type Tar struct{}
+
+func (t Tar) Name() string {
+	return "tar"
 }
 
-func (b *B) Tar(args ...string) archive {
-	t := archive{}
-	if len(args) > 0 {
-		t.Run(args...)
-	}
-	return t
-}
-
-func (t archive) WithOutput(w io.Writer) archive {
-	t.output = w
-	return t
-}
-
-func (t archive) WithFiles(dir string, files ...string) archive {
-	if len(files) > 0 {
-		t.files = append(t.files, filesets{
-			dir:   dir,
-			files: files,
-		})
-	}
-	return t
-}
-
-func (t archive) Run(args ...string) {
-	if len(args) == 0 {
-		Fatal("tar failed: needs at least one argument")
-	}
-	if len(args[1:]) > 0 {
-		t.files = append(t.files, filesets{
-			files: args[1:],
-		})
-	}
-	if t.output == nil {
-		t.output = os.Stdout
-	}
-	if err := tarFiles(t.output, args[0], t.files...); err != nil {
-		Fatalln("tar failed:", err)
-	}
-}
-
-func tarFiles(w io.Writer, dst string, srcs ...filesets) error {
-	files := []filesets{}
-	for _, f := range srcs {
-		matches, err := glob(f.dir, f.files, true)
-		if err != nil {
-			return err
-		}
-		files = append(files, filesets{
-			dir:   f.dir,
-			files: matches,
-		})
-	}
-	if len(files) == 0 {
-		return fmt.Errorf("needs at least one file")
-	}
-	Debugln("tar", dst, files)
+func (t Tar) Write(w io.Writer, dst string, srcs []fileset) error {
 	if dst != "-" {
-		if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
-			return err
-		}
 		f, err := os.Create(dst)
 		if err != nil {
 			return err
@@ -88,57 +29,41 @@ func tarFiles(w io.Writer, dst string, srcs ...filesets) error {
 		w = f
 		ext := filepath.Ext(dst)
 		if ext == ".gz" || ext == ".tgz" {
-			gz := gzip.NewWriter(w)
+			gz := gzip.NewWriter(f)
 			defer gz.Close()
 			w = gz
 		}
 	}
-	return writeTarFiles(w, files)
-}
-
-func writeTarFiles(w io.Writer, srcs []filesets) error {
 	tw := tar.NewWriter(w)
 	defer tw.Close()
-	for _, src := range srcs {
-		dir := src.dir
-		for _, file := range src.files {
-			err := filepath.Walk(filepath.Join(dir, file), func(path string, info os.FileInfo, err error) error {
-				if err != nil {
-					return err
-				}
-				rel, err := filepath.Rel(dir, path)
-				if err != nil {
-					return err
-				}
-				hdr, err := tar.FileInfoHeader(info, info.Name())
-				if err != nil {
-					return err
-				}
-				hdr.Name = filepath.ToSlash(rel)
-				if hdr.Mode%2 == 0 && isExecutable(path) {
-					hdr.Mode++
-					Debugln("fixed execute permissions for", hdr.Name)
-				}
-				if err := tw.WriteHeader(hdr); err != nil {
-					return err
-				}
-				if info.IsDir() {
-					return nil
-				}
-				f, err := os.Open(path)
-				if err != nil {
-					return err
-				}
-				defer f.Close()
-				_, err = io.Copy(tw, f)
-				return err
-			})
-			if err != nil {
-				return err
-			}
-		}
+	return walk(srcs, func(path, rel string, info os.FileInfo) error {
+		return writeTar(tw, path, rel, info)
+	})
+}
+
+func writeTar(tw *tar.Writer, path, rel string, info os.FileInfo) error {
+	hdr, err := tar.FileInfoHeader(info, info.Name())
+	if err != nil {
+		return err
 	}
-	return nil
+	hdr.Name = filepath.ToSlash(rel)
+	if hdr.Mode%2 == 0 && isExecutable(path) {
+		hdr.Mode++
+		Debugln("fixed execute permissions for", hdr.Name)
+	}
+	if err := tw.WriteHeader(hdr); err != nil {
+		return err
+	}
+	if info.IsDir() {
+		return nil
+	}
+	f, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	_, err = io.Copy(tw, f)
+	return err
 }
 
 func isExecutable(path string) bool {
@@ -165,9 +90,6 @@ func untarFiles(src, dst string) error {
 			return err
 		}
 		defer f.Close()
-		if err := os.MkdirAll(dst, 0755); err != nil {
-			return err
-		}
 		r = f
 		ext := filepath.Ext(src)
 		if ext == ".gz" || ext == ".tgz" {
@@ -183,7 +105,7 @@ func untarFiles(src, dst string) error {
 	for {
 		hdr, err := tr.Next()
 		if err == io.EOF {
-			break // End of archive
+			break // End of compression
 		}
 		if err != nil {
 			return err
