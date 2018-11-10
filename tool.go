@@ -7,6 +7,8 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"sync"
@@ -35,6 +37,7 @@ type Tool struct {
 	root         string
 	name         string
 	url          string
+	dir          string
 	env          []string
 	instructions string
 	names        string
@@ -42,6 +45,18 @@ type Tool struct {
 	output       io.Writer
 	input        io.Reader
 	success      bool
+}
+
+func (t Tool) WithDir(dir string) Tool {
+	dir = filepath.Clean(dir)
+	if filepath.IsAbs(dir) {
+		Fatalln("dir must be relative", dir)
+	}
+	if strings.Contains(dir, "..") {
+		Fatalln("dir must be a folder under project root", dir)
+	}
+	t.dir = dir
+	return t
 }
 
 func (t Tool) WithEnv(env ...string) Tool {
@@ -188,6 +203,7 @@ func (t Tool) Run(args ...string) int {
 	if t.input == nil {
 		t.input = os.Stdin
 	}
+	t.print(args)
 	if t.container {
 		return t.runContainer(args)
 	}
@@ -195,8 +211,14 @@ func (t Tool) Run(args ...string) int {
 }
 
 func (t Tool) runApplication(args []string) int {
-	Println("running", append([]string{t.name}, args...))
+	if t.dir != "" {
+		err := os.MkdirAll(t.dir, 0755)
+		if err != nil {
+			Fatal(err)
+		}
+	}
 	cmd := exec.Command(t.name, args...)
+	cmd.Dir = t.dir
 	cmd.Env = append(os.Environ(), t.env...)
 	if !t.success {
 		cmd.Stderr = os.Stderr
@@ -210,9 +232,19 @@ func (t Tool) runApplication(args []string) int {
 	return code
 }
 
+func (t Tool) print(args []string) {
+	prefix := "running"
+	if t.container {
+		prefix += " [container]"
+	}
+	if t.dir != "" {
+		prefix += " (in " + t.dir + ")"
+	}
+	Println(prefix, append([]string{t.name}, args...))
+}
+
 func (t Tool) runContainer(args []string) int {
 	// $$$$ MAT error out if docker in windows containers mode
-	Println("running (in container)", append([]string{t.name}, args...))
 	wd, err := os.Getwd()
 	if err != nil {
 		Fatalf("error running container for %s: %s", t.name, err)
@@ -220,7 +252,8 @@ func (t Tool) runContainer(args []string) int {
 	if t.root == "" {
 		Fatalf("error running container for %s: missing root", t.name)
 	}
-	w := "/go/src/" + t.root
+	w := path.Join("/go/src", t.root, t.dir)
+	// $$$$ MAT create w if needed
 	var envs []string
 	for _, e := range t.env {
 		envs = append(envs, "-e", e)
