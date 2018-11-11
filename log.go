@@ -2,8 +2,10 @@ package building
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"os"
+	"runtime"
 )
 
 var (
@@ -40,18 +42,25 @@ func CatchFailure() {
 }
 
 func Fatalf(format string, v ...interface{}) {
-	log.Printf(format, v...)
+	log.Printf(location()+" "+format, v...)
 	panic(failure{})
 }
 
 func Fatal(v ...interface{}) {
-	log.Print(v...)
+	log.Print(append([]interface{}{location() + " "}, v...)...)
 	panic(failure{})
 }
 
 func Fatalln(v ...interface{}) {
-	log.Println(v...)
+	log.Println(append([]interface{}{location()}, v...)...)
 	panic(failure{})
+}
+
+func location() string {
+	if _, file, line, ok := runtime.Caller(2); ok {
+		return fmt.Sprintf("%s:%d:", file, line)
+	}
+	return ""
 }
 
 func Printf(format string, v ...interface{}) {
