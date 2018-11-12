@@ -16,7 +16,7 @@ import (
 )
 
 var (
-	AlpineVersion = "3.7"
+	AlpineVersion = "3.8"
 
 	containers = flag.Bool("containers", false, "always build in containers")
 	cross      = flag.Bool("cross", false, "build for all platforms (linux, darwin, windows)")
