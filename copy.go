@@ -72,12 +72,12 @@ func copyFile(src, dst string, mode os.FileMode) error {
 	if err != nil {
 		return err
 	}
-	defer source.Close()
+	defer Close(source)
 	destination, err := os.Create(dst)
 	if err != nil {
 		return err
 	}
-	defer destination.Close()
+	defer Close(destination)
 	if _, err = io.Copy(destination, source); err != nil {
 		return err
 	}

@@ -16,7 +16,8 @@ import (
 )
 
 func Main() {
-	ForceQuiet()
+	*Verbose = false
+	*Quiet = true
 	defer CatchFailure()
 	// $$$$ MAT: support some flags
 	// -o build.exe
@@ -45,7 +46,9 @@ func build(b *B, dir string) {
 		if err := os.MkdirAll(todir, 0755); err != nil {
 			Fatalln("mkdir failed:", err)
 		}
-		defer os.RemoveAll(todir)
+		defer func() {
+			Check(os.RemoveAll(todir))
+		}()
 	}
 	// Relies on the fact that «The declaration order of variables declared in
 	// multiple files is determined by the order in which the files are
@@ -57,7 +60,9 @@ func build(b *B, dir string) {
 	if err := ioutil.WriteFile(pkgFile, []byte(pkgCode), 0666); err != nil {
 		Fatalln("write failed:", err)
 	}
-	defer os.Remove(pkgFile)
+	defer func() {
+		Check(os.Remove(pkgFile))
+	}()
 	mainFile := filepath.Join(todir, "aaa_"+uuid+"_main.go")
 	if err := ioutil.WriteFile(mainFile, []byte(mainCode), 0666); err != nil {
 		Fatalln("write failed:", err)
@@ -65,7 +70,9 @@ func build(b *B, dir string) {
 
 	build := mainFile
 	if isMain {
-		defer os.Remove(mainFile)
+		defer func() {
+			Check(os.Remove(mainFile))
+		}()
 		build = dir
 	}
 	g.Run("build", "-o", "build"+b.Exe(runtime.GOOS), build)

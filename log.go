@@ -3,6 +3,7 @@ package building
 import (
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"runtime"
@@ -107,7 +108,22 @@ func isDebug() bool {
 	return isInfo() && *Verbose
 }
 
-func ForceQuiet() {
-	*Verbose = false
-	*Quiet = true
+func Assert(err error) {
+	if err != nil {
+		log.Println([]interface{}{location(), err}...)
+		panic(failure{})
+	}
+}
+
+func Check(err error) {
+	if err != nil {
+		log.Println([]interface{}{location(), err}...)
+	}
+}
+
+func Close(c io.Closer) {
+	err := c.Close()
+	if err != nil {
+		log.Println([]interface{}{location(), err}...)
+	}
 }

@@ -25,17 +25,17 @@ func (t Tar) Write(w io.Writer, dst string, srcs []fileset) error {
 		if err != nil {
 			return err
 		}
-		defer f.Close()
+		defer Close(f)
 		w = f
 		ext := filepath.Ext(dst)
 		if ext == ".gz" || ext == ".tgz" {
 			gz := gzip.NewWriter(f)
-			defer gz.Close()
+			defer Close(gz)
 			w = gz
 		}
 	}
 	tw := tar.NewWriter(w)
-	defer tw.Close()
+	defer Close(tw)
 	return walk(srcs, func(path, rel string, info os.FileInfo) error {
 		return writeTar(tw, path, rel, info)
 	})
@@ -61,7 +61,7 @@ func writeTar(tw *tar.Writer, path, rel string, info os.FileInfo) error {
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer Close(f)
 	_, err = io.Copy(tw, f)
 	return err
 }
@@ -89,7 +89,7 @@ func untarFiles(src, dst string) error {
 		if err != nil {
 			return err
 		}
-		defer f.Close()
+		defer Close(f)
 		r = f
 		ext := filepath.Ext(src)
 		if ext == ".gz" || ext == ".tgz" {
@@ -97,7 +97,7 @@ func untarFiles(src, dst string) error {
 			if err != nil {
 				return err
 			}
-			defer gz.Close()
+			defer Close(gz)
 			r = gz
 		}
 	}
@@ -126,7 +126,7 @@ func untarFiles(src, dst string) error {
 		if err != nil {
 			return err
 		}
-		defer f.Close()
+		defer Close(f)
 		_, err = io.Copy(f, tr)
 		if err != nil {
 			return err
