@@ -4,10 +4,13 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"strings"
 )
 
 type command struct {
 	name    string
+	dir     string
 	output  io.Writer
 	success bool
 }
@@ -19,6 +22,18 @@ func (b *B) Command(name string, args ...string) command {
 	if len(args) > 0 {
 		c.Run(args...)
 	}
+	return c
+}
+
+func (c command) WithDir(dir string) command {
+	dir = filepath.Clean(dir)
+	if filepath.IsAbs(dir) {
+		Fatalln("dir must be relative", dir)
+	}
+	if strings.Contains(dir, "..") {
+		Fatalln("dir must be a folder under project root", dir)
+	}
+	c.dir = dir
 	return c
 }
 
@@ -38,6 +53,7 @@ func (c command) Run(args ...string) int {
 		c.output = os.Stdout
 	}
 	cmd := exec.Command(c.name, args...)
+	cmd.Dir = c.dir
 	cmd.Stdout = c.output
 	cmd.Stderr = os.Stderr
 	code, err := run(cmd, c.success)
