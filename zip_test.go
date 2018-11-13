@@ -18,7 +18,7 @@ func TestZipTree(t *testing.T) {
 	defer rootDirectory.Remove()
 
 	dst := filepath.Join(rootDirectory.Path(), "destination", "dst.zip")
-	err := compress(Zip{}, nil, dst,
+	err := compress(Zip{}, nil, -1, dst,
 		fileset{dir: rootDirectory.Path() + "/source", files: []string{"foo.txt"}},
 		fileset{dir: rootDirectory.Path(), files: []string{"source/bar"}})
 	assert.NilError(t, err)
@@ -48,7 +48,7 @@ func TestZipTreeWithGlob(t *testing.T) {
 	defer rootDirectory.Remove()
 
 	dst := filepath.Join(rootDirectory.Path(), "destination", "dst.zip")
-	err := compress(Zip{}, nil, dst, fileset{dir: rootDirectory.Path(), files: []string{"source/*"}})
+	err := compress(Zip{}, nil, -1, dst, fileset{dir: rootDirectory.Path(), files: []string{"source/*"}})
 	assert.NilError(t, err)
 	err = unzipFiles(dst, filepath.Join(rootDirectory.Path(), "destination"))
 	assert.NilError(t, err)
@@ -77,6 +77,6 @@ func TestZipTreeWithEmptyGlob(t *testing.T) {
 
 	dst := filepath.Join(rootDirectory.Path(), "destination", "dst.zip")
 	src := "source/non-existing*"
-	err := compress(Zip{}, nil, dst, fileset{dir: rootDirectory.Path(), files: []string{src}})
+	err := compress(Zip{}, nil, -1, dst, fileset{dir: rootDirectory.Path(), files: []string{src}})
 	assert.Error(t, err, fmt.Sprintf("file %q does not exist", src))
 }

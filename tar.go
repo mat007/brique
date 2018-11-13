@@ -19,7 +19,7 @@ func (t Tar) Name() string {
 	return "tar"
 }
 
-func (t Tar) Write(w io.Writer, dst string, srcs []fileset) error {
+func (t Tar) Write(w io.Writer, level int, dst string, srcs []fileset) error {
 	if dst != "-" {
 		f, err := os.Create(dst)
 		if err != nil {
@@ -29,7 +29,10 @@ func (t Tar) Write(w io.Writer, dst string, srcs []fileset) error {
 		w = f
 		ext := filepath.Ext(dst)
 		if ext == ".gz" || ext == ".tgz" {
-			gz := gzip.NewWriter(f)
+			gz, err := gzip.NewWriterLevel(f, level)
+			if err != nil {
+				return err
+			}
 			defer Close(gz)
 			w = gz
 		}

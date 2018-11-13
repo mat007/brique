@@ -2,6 +2,7 @@ package building
 
 import (
 	"archive/zip"
+	"compress/flate"
 	"errors"
 	"io"
 	"os"
@@ -18,7 +19,7 @@ func (z Zip) Name() string {
 	return "zip"
 }
 
-func (z Zip) Write(w io.Writer, dst string, srcs []fileset) error {
+func (z Zip) Write(w io.Writer, level int, dst string, srcs []fileset) error {
 	if dst != "-" {
 		f, err := os.Create(dst)
 		if err != nil {
@@ -28,6 +29,9 @@ func (z Zip) Write(w io.Writer, dst string, srcs []fileset) error {
 		w = f
 	}
 	zw := zip.NewWriter(w)
+	zw.RegisterCompressor(zip.Deflate, func(w io.Writer) (io.WriteCloser, error) {
+		return flate.NewWriter(w, level)
+	})
 	defer Close(zw)
 	return walk(srcs, func(path, rel string, info os.FileInfo) error {
 		if info.IsDir() {

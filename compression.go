@@ -14,18 +14,20 @@ type fileset struct {
 
 type archive interface {
 	Name() string
-	Write(w io.Writer, dst string, srcs []fileset) error
+	Write(w io.Writer, level int, dst string, srcs []fileset) error
 }
 
 type compression struct {
 	output  io.Writer
 	files   []fileset
 	archive archive
+	level   int
 }
 
 func makeCompression(a archive, args []string) compression {
 	c := compression{
 		archive: a,
+		level:   -1,
 	}
 	if len(args) > 0 {
 		c.Run(args[0], args[1:]...)
@@ -48,6 +50,16 @@ func (t compression) WithFiles(dir string, files ...string) compression {
 	return t
 }
 
+// WithLevel sets the compression level from 0 (no compression) to 9 (best compression).
+// -1 can be used for default compression level.
+func (t compression) WithLevel(level int) compression {
+	if level < -1 && level > 9 {
+		Fatalln("invalid compression level", level)
+	}
+	t.level = level
+	return t
+}
+
 func (t compression) Run(dst string, args ...string) {
 	if len(args) > 0 {
 		t.files = append(t.files, fileset{
@@ -57,12 +69,12 @@ func (t compression) Run(dst string, args ...string) {
 	if t.output == nil {
 		t.output = os.Stdout
 	}
-	if err := compress(t.archive, t.output, dst, t.files...); err != nil {
+	if err := compress(t.archive, t.output, t.level, dst, t.files...); err != nil {
 		Fatalln(t.archive.Name(), "failed:", err)
 	}
 }
 
-func compress(a archive, w io.Writer, dst string, srcs ...fileset) error {
+func compress(a archive, w io.Writer, level int, dst string, srcs ...fileset) error {
 	files := []fileset{}
 	for _, f := range srcs {
 		matches, err := glob(f.dir, f.files, true)
@@ -82,7 +94,7 @@ func compress(a archive, w io.Writer, dst string, srcs ...fileset) error {
 			return err
 		}
 	}
-	return a.Write(w, dst, files)
+	return a.Write(w, level, dst, files)
 }
 
 func walk(srcs []fileset, f func(path, rel string, info os.FileInfo) error) error {
