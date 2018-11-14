@@ -11,6 +11,7 @@ import (
 type command struct {
 	name    string
 	dir     string
+	env     []string
 	output  io.Writer
 	success bool
 }
@@ -37,6 +38,11 @@ func (c command) WithDir(dir string) command {
 	return c
 }
 
+func (c command) WithEnv(env ...string) command {
+	c.env = append(c.env, env...)
+	return c
+}
+
 func (c command) WithOutput(w io.Writer) command {
 	c.output = w
 	return c
@@ -54,8 +60,11 @@ func (c command) Run(args ...string) int {
 	}
 	cmd := exec.Command(c.name, args...)
 	cmd.Dir = c.dir
+	cmd.Env = append(os.Environ(), c.env...)
+	if !c.success {
+		cmd.Stderr = os.Stderr
+	}
 	cmd.Stdout = c.output
-	cmd.Stderr = os.Stderr
 	code, err := run(cmd, c.success)
 	if err != nil {
 		Fatalf("error running %s: %s", c.name, err)
