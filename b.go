@@ -25,7 +25,7 @@ func Main() {
 	dir := "./cmd/build"
 	b := Init("github.com/mat007/brique")
 	build(b, dir)
-	code := b.Command("build").WithSuccess().Run(os.Args[1:]...)
+	code := b.MakeCommand("build").WithSuccess().Run(os.Args[1:]...)
 	os.Exit(code)
 }
 

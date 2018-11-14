@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-type command struct {
+type Command struct {
 	name    string
 	dir     string
 	env     []string
@@ -16,8 +16,8 @@ type command struct {
 	success bool
 }
 
-func (b *B) Command(name string, args ...string) command {
-	c := command{
+func (b *B) MakeCommand(name string, args ...string) Command {
+	c := Command{
 		name: name,
 	}
 	if len(args) > 0 {
@@ -26,7 +26,7 @@ func (b *B) Command(name string, args ...string) command {
 	return c
 }
 
-func (c command) WithDir(dir string) command {
+func (c Command) WithDir(dir string) Command {
 	dir = filepath.Clean(dir)
 	if filepath.IsAbs(dir) {
 		Fatalln("dir must be relative", dir)
@@ -38,22 +38,22 @@ func (c command) WithDir(dir string) command {
 	return c
 }
 
-func (c command) WithEnv(env ...string) command {
+func (c Command) WithEnv(env ...string) Command {
 	c.env = append(c.env, env...)
 	return c
 }
 
-func (c command) WithOutput(w io.Writer) command {
+func (c Command) WithOutput(w io.Writer) Command {
 	c.output = w
 	return c
 }
 
-func (c command) WithSuccess() command {
+func (c Command) WithSuccess() Command {
 	c.success = true
 	return c
 }
 
-func (c command) Run(args ...string) int {
+func (c Command) Run(args ...string) int {
 	Println("running", append([]string{c.name}, args...))
 	if c.output == nil {
 		c.output = os.Stdout
