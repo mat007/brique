@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"runtime"
+	"strings"
 )
 
 var (
@@ -43,25 +44,18 @@ func CatchFailure() {
 }
 
 func Fatalf(format string, v ...interface{}) {
-	log.Printf(location()+" "+format, v...)
+	log.Printf(location(" ")+format, v...)
 	panic(failure{})
 }
 
 func Fatal(v ...interface{}) {
-	log.Print(append([]interface{}{location() + " "}, v...)...)
+	log.Print(append([]interface{}{location(" ")}, v...)...)
 	panic(failure{})
 }
 
 func Fatalln(v ...interface{}) {
-	log.Println(append([]interface{}{location()}, v...)...)
+	log.Println(append([]interface{}{location("")}, v...)...)
 	panic(failure{})
-}
-
-func location() string {
-	if _, file, line, ok := runtime.Caller(2); ok {
-		return fmt.Sprintf("%s:%d:", file, line)
-	}
-	return ""
 }
 
 func Printf(format string, v ...interface{}) {
@@ -110,20 +104,39 @@ func isDebug() bool {
 
 func Assert(err error) {
 	if err != nil {
-		log.Println([]interface{}{location(), err}...)
+		log.Println([]interface{}{location(""), err}...)
 		panic(failure{})
 	}
 }
 
 func Check(err error) {
 	if err != nil {
-		log.Println([]interface{}{location(), err}...)
+		log.Println([]interface{}{location(""), err}...)
 	}
 }
 
 func Close(c io.Closer) {
 	err := c.Close()
 	if err != nil {
-		log.Println([]interface{}{location(), err}...)
+		log.Println([]interface{}{location(""), err}...)
+	}
+}
+
+func location(suffix string) string {
+	pc := make([]uintptr, 10)
+	n := runtime.Callers(1, pc)
+	frames := runtime.CallersFrames(pc[:n])
+	for {
+		frame, more := frames.Next()
+		fmt.Println(frame)
+		if frame.Function == "runtime.main" {
+			return ""
+		}
+		if !strings.Contains(frame.File, "github.com/mat007/brique") {
+			return fmt.Sprintf("%s:%d:%s", frame.File, frame.Line, suffix)
+		}
+		if !more {
+			return ""
+		}
 	}
 }
