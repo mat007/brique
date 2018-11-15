@@ -15,10 +15,6 @@ func (b *B) Tar(args ...string) compression {
 
 type Tar struct{}
 
-func (t Tar) Name() string {
-	return "tar"
-}
-
 func (t Tar) Write(w io.Writer, level int, dst string, srcs []fileset) error {
 	if dst != "-" {
 		f, err := os.Create(dst)

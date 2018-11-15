@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 	"unicode"
 	"unicode/utf8"
 )
@@ -18,7 +19,7 @@ import (
 func Main() {
 	*Verbose = false
 	*Quiet = true
-	defer CatchFailure()
+	defer CatchFailure(time.Now())
 	// $$$$ MAT: support some flags
 	// -o build.exe
 	// -f ./cmd/build
@@ -126,7 +127,10 @@ func parse(dir, path string) (string, string, bool, error) {
 	isMain := targets[0].pkg == "main"
 	mainCode := `package main
 
-import "github.com/mat007/brique"
+import (
+	"time"
+	"github.com/mat007/brique"
+)
 `
 	if !isMain {
 		mainCode += `import "` + root + `"
@@ -134,7 +138,7 @@ import "github.com/mat007/brique"
 	}
 	mainCode += `
 func main() {
-	defer building.CatchFailure()
+	defer building.CatchFailure(time.Now())
 	b := building.Builder()
 `
 	for _, t := range targets {

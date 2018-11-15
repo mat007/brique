@@ -8,6 +8,7 @@ import (
 	"os"
 	"runtime"
 	"strings"
+	"time"
 )
 
 var (
@@ -32,15 +33,15 @@ func init() {
 type failure struct {
 }
 
-func CatchFailure() {
+func CatchFailure(start time.Time) {
 	if e := recover(); e != nil {
 		if _, ok := e.(failure); ok {
-			// $$$$ MAT: print stack trace
-			log.Print("build failed")
+			b.Debugf("build failed (took %s)", time.Since(start))
 			os.Exit(1)
 		}
 		panic(e)
 	}
+	b.Debugf("build finished (took %s)", time.Since(start))
 }
 
 func Fatalf(format string, v ...interface{}) {
@@ -128,7 +129,6 @@ func location(suffix string) string {
 	frames := runtime.CallersFrames(pc[:n])
 	for {
 		frame, more := frames.Next()
-		fmt.Println(frame)
 		if frame.Function == "runtime.main" {
 			return ""
 		}
@@ -139,4 +139,52 @@ func location(suffix string) string {
 			return ""
 		}
 	}
+}
+
+func (b *B) Fatal(v ...interface{}) {
+	Fatal(v...)
+}
+
+func (b *B) Fatalf(format string, v ...interface{}) {
+	Fatalf(format, v...)
+}
+
+func (b *B) Fatalln(v ...interface{}) {
+	Fatalln(v...)
+}
+
+func (b *B) Print(v ...interface{}) {
+	Print(v...)
+}
+
+func (b *B) Printf(format string, v ...interface{}) {
+	Printf(format, v...)
+}
+
+func (b *B) Println(v ...interface{}) {
+	Println(v...)
+}
+
+func (b *B) Debug(v ...interface{}) {
+	Debug(v...)
+}
+
+func (b *B) Debugf(format string, v ...interface{}) {
+	Debugf(format, v...)
+}
+
+func (b *B) Debugln(v ...interface{}) {
+	Debugln(v...)
+}
+
+func (b *B) Assert(err error) {
+	Assert(err)
+}
+
+func (b *B) Check(err error) {
+	Check(err)
+}
+
+func (b *B) Close(c io.Closer) {
+	Close(c)
 }

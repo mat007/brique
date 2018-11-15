@@ -13,7 +13,6 @@ type fileset struct {
 }
 
 type archive interface {
-	Name() string
 	Write(w io.Writer, level int, dst string, srcs []fileset) error
 }
 
@@ -70,7 +69,7 @@ func (t compression) Run(dst string, args ...string) {
 		t.output = os.Stdout
 	}
 	if err := compress(t.archive, t.output, t.level, dst, t.files...); err != nil {
-		Fatalln(t.archive.Name(), "failed:", err)
+		Fatalln(err)
 	}
 }
 

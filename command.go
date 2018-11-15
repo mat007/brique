@@ -61,13 +61,11 @@ func (c Command) Run(args ...string) int {
 	cmd := exec.Command(c.name, args...)
 	cmd.Dir = c.dir
 	cmd.Env = append(os.Environ(), c.env...)
-	if !c.success {
-		cmd.Stderr = os.Stderr
-	}
+	cmd.Stderr = os.Stderr
 	cmd.Stdout = c.output
 	code, err := run(cmd, c.success)
 	if err != nil {
-		Fatalf("error running %s: %s", c.name, err)
+		Fatalln(err)
 	}
 	return code
 }

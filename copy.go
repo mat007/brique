@@ -11,7 +11,7 @@ import (
 func (b *B) Copy(destination string, sources ...string) {
 	err := copy(destination, sources)
 	if err != nil {
-		Fatalf("copy failed: %s", err)
+		Fatalln(err)
 	}
 }
 

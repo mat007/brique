@@ -8,7 +8,7 @@ func (b *B) Remove(paths ...string) {
 	err := remove(func(path string) {
 	}, paths...)
 	if err != nil {
-		Fatalf("remove failed: %s", err)
+		Fatalln(err)
 	}
 }
 

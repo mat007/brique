@@ -42,4 +42,4 @@ func main() { building.Main() }" > b_main/main.go
 fi
 
 # run the build tool forwarding the arguments
-./b $*
+./b "$@"

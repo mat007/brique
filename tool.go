@@ -167,13 +167,13 @@ func (t Tool) buildImage() {
 	}
 	cmd.Stdin = buf
 	if err := cmd.Run(); err != nil {
-		Fatalf("error building image for %s: %s", t.name, err)
+		Fatalln(err)
 	}
 }
 
 func (t Tool) image() string {
 	if t.root == "" {
-		Fatalf("error building image for %s: missing root", t.name)
+		Fatalln("missing root")
 	}
 	return strings.Replace(t.root, "/", "-", -1) + "-build-" + t.names
 }
@@ -220,14 +220,12 @@ func (t Tool) runApplication(args []string) int {
 	cmd := exec.Command(t.name, args...)
 	cmd.Dir = t.dir
 	cmd.Env = append(os.Environ(), t.env...)
-	if !t.success {
-		cmd.Stderr = os.Stderr
-	}
+	cmd.Stderr = os.Stderr
 	cmd.Stdout = t.output
 	cmd.Stdin = t.input
 	code, err := run(cmd, t.success)
 	if err != nil {
-		Fatalf("error running %s: %s", t.name, err)
+		Fatalln(err)
 	}
 	return code
 }
@@ -247,10 +245,10 @@ func (t Tool) runContainer(args []string) int {
 	// $$$$ MAT error out if docker in windows containers mode
 	wd, err := os.Getwd()
 	if err != nil {
-		Fatalf("error running container for %s: %s", t.name, err)
+		Fatalln(err)
 	}
 	if t.root == "" {
-		Fatalf("error running container for %s: missing root", t.name)
+		Fatalln("missing root")
 	}
 	w := path.Join("/go/src", t.root, t.dir)
 	// $$$$ MAT create w if needed
@@ -272,7 +270,7 @@ func (t Tool) runContainer(args []string) int {
 	cmd.Stdin = t.input
 	code, err := run(cmd, t.success)
 	if err != nil {
-		Fatalf("error running container for %s: %s", t.name, err)
+		Fatalln(err)
 	}
 	return code
 }

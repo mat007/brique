@@ -15,10 +15,6 @@ func (b *B) Zip(args ...string) compression {
 
 type Zip struct{}
 
-func (z Zip) Name() string {
-	return "zip"
-}
-
 func (z Zip) Write(w io.Writer, level int, dst string, srcs []fileset) error {
 	if dst != "-" {
 		f, err := os.Create(dst)
