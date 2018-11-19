@@ -44,54 +44,117 @@ func CatchFailure(start time.Time) {
 	b.Debugf("build finished (took %s)", time.Since(start))
 }
 
-func Fatalf(format string, v ...interface{}) {
-	log.Printf(location(" ")+format, v...)
-	panic(failure{})
+func (b *B) Helper() {
+	var pc [2]uintptr
+	n := runtime.Callers(2, pc[:])
+	frames := runtime.CallersFrames(pc[:n])
+	frame, _ := frames.Next()
+	b.mutex.Lock()
+	defer b.mutex.Unlock()
+	if b.helpers == nil {
+		b.helpers = make(map[string]bool)
+	}
+	b.helpers[frame.Function] = true
 }
 
-func Fatal(v ...interface{}) {
-	log.Print(append([]interface{}{location(" ")}, v...)...)
-	panic(failure{})
-}
-
-func Fatalln(v ...interface{}) {
-	log.Println(append([]interface{}{location("")}, v...)...)
-	panic(failure{})
-}
-
-func Printf(format string, v ...interface{}) {
-	if isInfo() {
-		log.Printf(format, v...)
+func (b *B) location(suffix string) string {
+	var pc [10]uintptr
+	n := runtime.Callers(1, pc[:])
+	frames := runtime.CallersFrames(pc[:n])
+	for {
+		frame, more := frames.Next()
+		if frame.Function == "runtime.main" {
+			return ""
+		}
+		if !b.skip(frame) {
+			return fmt.Sprintf("%s:%d:%s", frame.File, frame.Line, suffix)
+		}
+		if !more {
+			return ""
+		}
 	}
 }
 
-func Print(v ...interface{}) {
+func (b *B) skip(frame runtime.Frame) bool {
+	if strings.Contains(frame.Function, "github.com/mat007/brique") {
+		return true
+	}
+	if b == nil {
+		return false
+	}
+	b.mutex.Lock()
+	defer b.mutex.Unlock()
+	return b.helpers[frame.Function]
+}
+
+func (b *B) Fatal(v ...interface{}) {
+	log.Print(append([]interface{}{b.location(" ")}, v...)...)
+	panic(failure{})
+}
+
+func (b *B) Fatalf(format string, v ...interface{}) {
+	log.Printf(b.location(" ")+format, v...)
+	panic(failure{})
+}
+
+func (b *B) Fatalln(v ...interface{}) {
+	log.Println(append([]interface{}{b.location("")}, v...)...)
+	panic(failure{})
+}
+
+func (b *B) Print(v ...interface{}) {
 	if isInfo() {
 		log.Print(v...)
 	}
 }
 
-func Println(v ...interface{}) {
+func (b *B) Printf(format string, v ...interface{}) {
+	if isInfo() {
+		log.Printf(format, v...)
+	}
+}
+
+func (b *B) Println(v ...interface{}) {
 	if isInfo() {
 		log.Println(v...)
 	}
 }
 
-func Debugf(format string, v ...interface{}) {
-	if isDebug() {
-		log.Printf(format, v...)
-	}
-}
-
-func Debug(v ...interface{}) {
+func (b *B) Debug(v ...interface{}) {
 	if isDebug() {
 		log.Print(v...)
 	}
 }
 
-func Debugln(v ...interface{}) {
+func (b *B) Debugf(format string, v ...interface{}) {
+	if isDebug() {
+		log.Printf(format, v...)
+	}
+}
+
+func (b *B) Debugln(v ...interface{}) {
 	if isDebug() {
 		log.Println(v...)
+	}
+}
+
+func (b *B) Assert(err error) {
+	if err != nil {
+		log.Println([]interface{}{b.location(""), err}...)
+		panic(failure{})
+	}
+}
+
+func (b *B) Check(err error) {
+	if err != nil {
+		log.Println([]interface{}{b.location(""), err}...)
+	}
+}
+
+func (b *B) Close(c io.Closer) {
+	err := c.Close()
+	if err != nil {
+		log.Println([]interface{}{b.location(""), err}...)
 	}
 }
 
@@ -101,90 +164,4 @@ func isInfo() bool {
 
 func isDebug() bool {
 	return isInfo() && *Verbose
-}
-
-func Assert(err error) {
-	if err != nil {
-		log.Println([]interface{}{location(""), err}...)
-		panic(failure{})
-	}
-}
-
-func Check(err error) {
-	if err != nil {
-		log.Println([]interface{}{location(""), err}...)
-	}
-}
-
-func Close(c io.Closer) {
-	err := c.Close()
-	if err != nil {
-		log.Println([]interface{}{location(""), err}...)
-	}
-}
-
-func location(suffix string) string {
-	pc := make([]uintptr, 10)
-	n := runtime.Callers(1, pc)
-	frames := runtime.CallersFrames(pc[:n])
-	for {
-		frame, more := frames.Next()
-		if frame.Function == "runtime.main" {
-			return ""
-		}
-		if !strings.Contains(frame.File, "github.com/mat007/brique") {
-			return fmt.Sprintf("%s:%d:%s", frame.File, frame.Line, suffix)
-		}
-		if !more {
-			return ""
-		}
-	}
-}
-
-func (b *B) Fatal(v ...interface{}) {
-	Fatal(v...)
-}
-
-func (b *B) Fatalf(format string, v ...interface{}) {
-	Fatalf(format, v...)
-}
-
-func (b *B) Fatalln(v ...interface{}) {
-	Fatalln(v...)
-}
-
-func (b *B) Print(v ...interface{}) {
-	Print(v...)
-}
-
-func (b *B) Printf(format string, v ...interface{}) {
-	Printf(format, v...)
-}
-
-func (b *B) Println(v ...interface{}) {
-	Println(v...)
-}
-
-func (b *B) Debug(v ...interface{}) {
-	Debug(v...)
-}
-
-func (b *B) Debugf(format string, v ...interface{}) {
-	Debugf(format, v...)
-}
-
-func (b *B) Debugln(v ...interface{}) {
-	Debugln(v...)
-}
-
-func (b *B) Assert(err error) {
-	Assert(err)
-}
-
-func (b *B) Check(err error) {
-	Check(err)
-}
-
-func (b *B) Close(c io.Closer) {
-	Close(c)
 }

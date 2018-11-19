@@ -38,17 +38,17 @@ func build(b *B, dir string) {
 	// $$$$ MAT: parse recursively?
 	mainCode, pkgCode, isMain, err := parse(dir, path)
 	if err != nil {
-		Fatalln("parse failed:", err)
+		b.Fatalln("parse failed:", err)
 	}
 	uuid := strings.Replace(path, "/", "_", -1)
 	todir := dir
 	if !isMain {
 		todir = filepath.Join(dir, "b_"+uuid)
 		if err := os.MkdirAll(todir, 0755); err != nil {
-			Fatalln("mkdir failed:", err)
+			b.Fatalln("mkdir failed:", err)
 		}
 		defer func() {
-			Check(os.RemoveAll(todir))
+			b.Check(os.RemoveAll(todir))
 		}()
 	}
 	// Relies on the fact that «The declaration order of variables declared in
@@ -59,20 +59,20 @@ func build(b *B, dir string) {
 	// See https://golang.org/ref/spec#Package_initialization
 	pkgFile := filepath.Join(dir, "aaa_"+uuid+"_build.go")
 	if err := ioutil.WriteFile(pkgFile, []byte(pkgCode), 0666); err != nil {
-		Fatalln("write failed:", err)
+		b.Fatalln("write failed:", err)
 	}
 	defer func() {
-		Check(os.Remove(pkgFile))
+		b.Check(os.Remove(pkgFile))
 	}()
 	mainFile := filepath.Join(todir, "aaa_"+uuid+"_main.go")
 	if err := ioutil.WriteFile(mainFile, []byte(mainCode), 0666); err != nil {
-		Fatalln("write failed:", err)
+		b.Fatalln("write failed:", err)
 	}
 
 	build := mainFile
 	if isMain {
 		defer func() {
-			Check(os.Remove(mainFile))
+			b.Check(os.Remove(mainFile))
 		}()
 		build = dir
 	}

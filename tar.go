@@ -21,7 +21,7 @@ func (t Tar) Write(w io.Writer, level int, dst string, srcs []fileset) error {
 		if err != nil {
 			return err
 		}
-		defer Close(f)
+		defer b.Close(f)
 		w = f
 		ext := filepath.Ext(dst)
 		if ext == ".gz" || ext == ".tgz" {
@@ -29,12 +29,12 @@ func (t Tar) Write(w io.Writer, level int, dst string, srcs []fileset) error {
 			if err != nil {
 				return err
 			}
-			defer Close(gz)
+			defer b.Close(gz)
 			w = gz
 		}
 	}
 	tw := tar.NewWriter(w)
-	defer Close(tw)
+	defer b.Close(tw)
 	return walk(srcs, func(path, rel string, info os.FileInfo) error {
 		return writeTar(tw, path, rel, info)
 	})
@@ -48,7 +48,7 @@ func writeTar(tw *tar.Writer, path, rel string, info os.FileInfo) error {
 	hdr.Name = filepath.ToSlash(rel)
 	if hdr.Mode%2 == 0 && isExecutable(path) {
 		hdr.Mode++
-		Debugln("fixed execute permissions for", hdr.Name)
+		b.Debugln("fixed execute permissions for", hdr.Name)
 	}
 	if err := tw.WriteHeader(hdr); err != nil {
 		return err
@@ -60,7 +60,7 @@ func writeTar(tw *tar.Writer, path, rel string, info os.FileInfo) error {
 	if err != nil {
 		return err
 	}
-	defer Close(f)
+	defer b.Close(f)
 	_, err = io.Copy(tw, f)
 	return err
 }
@@ -88,7 +88,7 @@ func untarFiles(src, dst string) error {
 		if err != nil {
 			return err
 		}
-		defer Close(f)
+		defer b.Close(f)
 		r = f
 		ext := filepath.Ext(src)
 		if ext == ".gz" || ext == ".tgz" {
@@ -96,7 +96,7 @@ func untarFiles(src, dst string) error {
 			if err != nil {
 				return err
 			}
-			defer Close(gz)
+			defer b.Close(gz)
 			r = gz
 		}
 	}
@@ -125,7 +125,7 @@ func untarFiles(src, dst string) error {
 		if err != nil {
 			return err
 		}
-		defer Close(f)
+		defer b.Close(f)
 		_, err = io.Copy(f, tr)
 		if err != nil {
 			return err

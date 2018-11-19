@@ -29,10 +29,10 @@ func (b *B) MakeCommand(name string, args ...string) Command {
 func (c Command) WithDir(dir string) Command {
 	dir = filepath.Clean(dir)
 	if filepath.IsAbs(dir) {
-		Fatalln("dir must be relative", dir)
+		b.Fatalln("dir must be relative", dir)
 	}
 	if strings.Contains(dir, "..") {
-		Fatalln("dir must be a folder under project root", dir)
+		b.Fatalln("dir must be a folder under project root", dir)
 	}
 	c.dir = dir
 	return c
@@ -54,7 +54,7 @@ func (c Command) WithSuccess() Command {
 }
 
 func (c Command) Run(args ...string) int {
-	Println("running", append([]string{c.name}, args...))
+	b.Println("running", append([]string{c.name}, args...))
 	if c.output == nil {
 		c.output = os.Stdout
 	}
@@ -65,7 +65,7 @@ func (c Command) Run(args ...string) int {
 	cmd.Stdout = c.output
 	code, err := run(cmd, c.success)
 	if err != nil {
-		Fatalln(err)
+		b.Fatalln(err)
 	}
 	return code
 }

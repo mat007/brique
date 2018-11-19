@@ -53,7 +53,7 @@ func (t compression) WithFiles(dir string, files ...string) compression {
 // -1 can be used for default compression level.
 func (t compression) WithLevel(level int) compression {
 	if level < -1 && level > 9 {
-		Fatalln("invalid compression level", level)
+		b.Fatalln("invalid compression level", level)
 	}
 	t.level = level
 	return t
@@ -69,7 +69,7 @@ func (t compression) Run(dst string, args ...string) {
 		t.output = os.Stdout
 	}
 	if err := compress(t.archive, t.output, t.level, dst, t.files...); err != nil {
-		Fatalln(err)
+		b.Fatalln(err)
 	}
 }
 

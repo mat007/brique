@@ -11,7 +11,7 @@ import (
 func (b *B) Copy(destination string, sources ...string) {
 	err := copy(destination, sources)
 	if err != nil {
-		Fatalln(err)
+		b.Fatalln(err)
 	}
 }
 
@@ -40,7 +40,7 @@ func copy(destination string, sources []string) error {
 		}
 		dest := filepath.Join(destination, filepath.Base(source))
 		if info.IsDir() {
-			Debugf("copying dir %q to %q\n", source, dest)
+			b.Debugf("copying dir %q to %q\n", source, dest)
 			if err = copyDirectory(source, dest, info.Mode()); err != nil {
 				return err
 			}
@@ -56,7 +56,7 @@ func copy(destination string, sources []string) error {
 		if err = os.MkdirAll(filepath.Dir(dest), dirInfo.Mode()); err != nil {
 			return err
 		}
-		Debugf("copying file %q to %q\n", source, dest)
+		b.Debugf("copying file %q to %q\n", source, dest)
 		if err = copyFile(source, dest, info.Mode()); err != nil {
 			return err
 		}
@@ -72,12 +72,12 @@ func copyFile(src, dst string, mode os.FileMode) error {
 	if err != nil {
 		return err
 	}
-	defer Close(source)
+	defer b.Close(source)
 	destination, err := os.Create(dst)
 	if err != nil {
 		return err
 	}
-	defer Close(destination)
+	defer b.Close(destination)
 	if _, err = io.Copy(destination, source); err != nil {
 		return err
 	}

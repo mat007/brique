@@ -50,10 +50,10 @@ type Tool struct {
 func (t Tool) WithDir(dir string) Tool {
 	dir = filepath.Clean(dir)
 	if filepath.IsAbs(dir) {
-		Fatalln("dir must be relative", dir)
+		b.Fatalln("dir must be relative", dir)
 	}
 	if strings.Contains(dir, "..") {
-		Fatalln("dir must be a folder under project root", dir)
+		b.Fatalln("dir must be a folder under project root", dir)
 	}
 	t.dir = dir
 	return t
@@ -112,7 +112,7 @@ func (b *B) makeTool(name, check, url, instructions string) Tool {
 		container:    noApplication(name, check),
 	}
 	if t.container && name != "" && url != "" && !*containers {
-		Print("missing " + name + ": consider installing it to speed up the build, see " + url)
+		b.Print("missing " + name + ": consider installing it to speed up the build, see " + url)
 	}
 	if t.container {
 		t.buildImage()
@@ -128,7 +128,7 @@ func (b *B) WithOS(f func(goos string)) {
 	}
 	wg := sync.WaitGroup{}
 	for _, goos := range platforms {
-		Println("building for", goos)
+		b.Println("building for", goos)
 		if *parallel {
 			wg.Add(1)
 			go func(goos string) {
@@ -143,7 +143,7 @@ func (b *B) WithOS(f func(goos string)) {
 }
 
 func noApplication(name, check string) bool {
-	Debugln("checking for", name)
+	b.Debugln("checking for", name)
 	cmd := exec.Command(name)
 	if check != "" {
 		cmd = exec.Command(name, check)
@@ -157,7 +157,7 @@ func noApplication(name, check string) bool {
 }
 
 func (t Tool) buildImage() {
-	Println("preparing image for", t.name)
+	b.Println("preparing image for", t.name)
 	buf := &bytes.Buffer{}
 	tarFile(t.instructions, "Dockerfile", buf)
 	cmd := exec.Command("docker", "build", "-t", t.image(), "-")
@@ -167,13 +167,13 @@ func (t Tool) buildImage() {
 	}
 	cmd.Stdin = buf
 	if err := cmd.Run(); err != nil {
-		Fatalln(err)
+		b.Fatalln(err)
 	}
 }
 
 func (t Tool) image() string {
 	if t.root == "" {
-		Fatalln("missing root")
+		b.Fatalln("missing root")
 	}
 	return strings.Replace(t.root, "/", "-", -1) + "-build-" + t.names
 }
@@ -186,13 +186,13 @@ func tarFile(content, filename string, writer io.Writer) {
 		Size: int64(len(content)),
 	}
 	if err := tw.WriteHeader(hdr); err != nil {
-		Fatal(err)
+		b.Fatal(err)
 	}
 	if _, err := tw.Write([]byte(content)); err != nil {
-		Fatal(err)
+		b.Fatal(err)
 	}
 	if err := tw.Close(); err != nil {
-		Fatal(err)
+		b.Fatal(err)
 	}
 }
 
@@ -214,7 +214,7 @@ func (t Tool) runApplication(args []string) int {
 	if t.dir != "" {
 		err := os.MkdirAll(t.dir, 0755)
 		if err != nil {
-			Fatal(err)
+			b.Fatal(err)
 		}
 	}
 	cmd := exec.Command(t.name, args...)
@@ -225,7 +225,7 @@ func (t Tool) runApplication(args []string) int {
 	cmd.Stdin = t.input
 	code, err := run(cmd, t.success)
 	if err != nil {
-		Fatalln(err)
+		b.Fatal(err)
 	}
 	return code
 }
@@ -238,17 +238,17 @@ func (t Tool) print(args []string) {
 	if t.dir != "" {
 		prefix += " (in " + t.dir + ")"
 	}
-	Println(prefix, append([]string{t.name}, args...))
+	b.Println(prefix, append([]string{t.name}, args...))
 }
 
 func (t Tool) runContainer(args []string) int {
 	// $$$$ MAT error out if docker in windows containers mode
 	wd, err := os.Getwd()
 	if err != nil {
-		Fatalln(err)
+		b.Fatalln(err)
 	}
 	if t.root == "" {
-		Fatalln("missing root")
+		b.Fatalln("missing root")
 	}
 	w := path.Join("/go/src", t.root, t.dir)
 	// $$$$ MAT create w if needed
@@ -263,14 +263,14 @@ func (t Tool) runContainer(args []string) int {
 	// $$$$ do the same with TEMPDIR -> /tmp, and mount it ? any dir ?
 	// $$$$ MAT if GOPATH set, mount it instead of wd ?
 	arg = append(arg, args...)
-	Debugln("running", append([]string{"docker"}, arg...))
+	b.Debugln("running", append([]string{"docker"}, arg...))
 	cmd := exec.Command("docker", arg...)
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = t.output
 	cmd.Stdin = t.input
 	code, err := run(cmd, t.success)
 	if err != nil {
-		Fatalln(err)
+		b.Fatalln(err)
 	}
 	return code
 }

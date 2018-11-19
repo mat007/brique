@@ -14,6 +14,7 @@ type B struct {
 	targets       map[string]target
 	defaultTarget *target
 	tools         map[string]Tool
+	helpers       map[string]bool
 	mutex         sync.Mutex
 }
 
@@ -58,11 +59,11 @@ func (b *B) MakeTarget(name, description string, f func(*B)) target {
 }
 
 func (b *B) Build(t target) {
-	Println(">", t.name)
+	b.Println(">", t.name)
 	start := time.Now()
 	t.f(b)
 	delta := time.Now().Sub(start)
-	Printf("< %s (took %s)", t.name, delta)
+	b.Printf("< %s (took %s)", t.name, delta)
 }
 
 func (b *B) printTargets() {
@@ -103,7 +104,7 @@ Options:
 	args := flag.Args()
 	if len(args) == 0 {
 		if b.defaultTarget == nil {
-			Fatal("no target defined")
+			b.Fatal("no target defined")
 		}
 		runs = append(runs, *b.defaultTarget)
 	}
@@ -111,17 +112,17 @@ Options:
 		if t, ok := b.targets[a]; ok {
 			runs = append(runs, t)
 		} else {
-			Fatalln("invalid target", a)
+			b.Fatalln("invalid target", a)
 		}
 	}
 
-	Print("build started")
+	b.Print("build started")
 	start := time.Now()
 	for _, t := range runs {
 		b.Build(t)
 	}
 	delta := time.Now().Sub(start)
-	Printf("build finished (took %s)", delta)
+	b.Printf("build finished (took %s)", delta)
 }
 
 func (b *B) Exe(os string) string {

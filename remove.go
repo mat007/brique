@@ -8,7 +8,7 @@ func (b *B) Remove(paths ...string) {
 	err := remove(func(path string) {
 	}, paths...)
 	if err != nil {
-		Fatalln(err)
+		b.Fatalln(err)
 	}
 }
 
@@ -21,7 +21,7 @@ func remove(notify func(path string), paths ...string) error {
 		if err := os.RemoveAll(match); err != nil {
 			return err
 		}
-		Debugf("removed %q", match)
+		b.Debugf("removed %q", match)
 	}
 	return nil
 }
