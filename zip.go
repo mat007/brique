@@ -33,7 +33,7 @@ func (z Zip) Write(w io.Writer, level int, dst string, srcs []fileset) error {
 		if info.IsDir() {
 			return nil
 		}
-		w, err := zw.Create(rel)
+		w, err := zw.Create(filepath.ToSlash(rel))
 		if err != nil {
 			return err
 		}
@@ -52,14 +52,13 @@ func unzipFiles(src, dst string) error {
 	if src == "-" {
 		// $$$$ MAT to do
 		return errors.New("reading from buffer not supported")
-	} else {
-		r, err := zip.OpenReader(src)
-		if err != nil {
-			return err
-		}
-		defer b.Close(r)
-		zr = &r.Reader
 	}
+	r, err := zip.OpenReader(src)
+	if err != nil {
+		return err
+	}
+	defer b.Close(r)
+	zr = &r.Reader
 	for _, file := range zr.File {
 		path := filepath.Join(dst, file.Name)
 		info := file.FileInfo()
