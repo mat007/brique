@@ -5,14 +5,13 @@ import (
 )
 
 func (b *B) Remove(paths ...string) {
-	err := remove(func(path string) {
-	}, paths...)
+	err := remove(paths...)
 	if err != nil {
 		b.Fatalln(err)
 	}
 }
 
-func remove(notify func(path string), paths ...string) error {
+func remove(paths ...string) error {
 	matches, err := glob("", paths, false)
 	if err != nil {
 		return err

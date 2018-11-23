@@ -18,7 +18,7 @@ func TestRemove(t *testing.T) {
 		fs.WithDir("remaining-dir"))
 	defer rootDirectory.Remove()
 
-	err := remove(nil,
+	err := remove(
 		filepath.Join(rootDirectory.Path(), "empty-dir"),
 		filepath.Join(rootDirectory.Path(), "full-dir"),
 		filepath.Join(rootDirectory.Path(), "non-existing"),
@@ -39,7 +39,7 @@ func TestRemoveWithGlob(t *testing.T) {
 		fs.WithFile("remaining-file", ""))
 	defer rootDirectory.Remove()
 
-	err := remove(nil,
+	err := remove(
 		filepath.Join(rootDirectory.Path(), "*-dir"),
 		filepath.Join(rootDirectory.Path(), "full-dir"))
 	assert.NilError(t, err)
@@ -53,7 +53,7 @@ func TestRemoveWithNonExistingGlob(t *testing.T) {
 		fs.WithFile("remaining-file", ""))
 	defer rootDirectory.Remove()
 
-	err := remove(nil, filepath.Join(rootDirectory.Path(), "non-existing*"))
+	err := remove(filepath.Join(rootDirectory.Path(), "non-existing*"))
 	assert.NilError(t, err)
 	expected := fs.Expected(t, fs.WithFile("remaining-file", ""))
 	assert.Assert(t, fs.Equal(rootDirectory.Path(), expected))
