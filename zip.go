@@ -33,7 +33,7 @@ func (z Zip) Write(w io.Writer, level int, dst string, srcs []fileset) error {
 		if info.IsDir() {
 			return nil
 		}
-		w, err := zw.Create(filepath.ToSlash(rel))
+		w, err := zw.Create(rel)
 		if err != nil {
 			return err
 		}

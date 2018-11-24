@@ -3,63 +3,95 @@ package building
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 )
 
-func (b *B) Copy(destination string, sources ...string) {
-	err := copy(destination, sources)
-	if err != nil {
+// Copy wraps a files and folders copy operation.
+type Copy struct {
+	destination string
+	filesets    []fileset
+}
+
+// Copy handles copying files and folders.
+func (b *B) Copy(destination string, paths ...string) Copy {
+	c := Copy{
+		destination: destination,
+	}
+	if len(paths) > 0 {
+		c.filesets = append(c.filesets, fileset{
+			includes: paths,
+		})
+		c.Run()
+	}
+	return c
+}
+
+// WithFiles adds files and folders to copy.
+func (c Copy) WithFiles(paths ...string) Copy {
+	c.filesets = append(c.filesets, fileset{
+		includes: paths,
+	})
+	return c
+}
+
+// WithFileset adds a fileset to copy.
+func (c Copy) WithFileset(dir, includes, excludes string) Copy {
+	c.filesets = append(c.filesets, makeFileset(dir, includes, excludes))
+	return c
+}
+
+// Run performs the copy.
+func (c Copy) Run() {
+	if err := c.run(); err != nil {
 		b.Fatalln(err)
 	}
 }
 
-func copy(destination string, sources []string) error {
-	sources, err := glob("", sources, true)
+func (c Copy) run() error {
+	filesets, err := resolve(c.filesets, true)
 	if err != nil {
 		return err
 	}
+	if len(filesets) == 0 {
+		return nil
+	}
 	toFile := true
-	info, err := os.Stat(destination)
+	info, err := os.Stat(c.destination)
 	if os.IsNotExist(err) {
-		if destination[len(destination)-1] == '/' || len(sources) > 1 {
+		if c.destination[len(c.destination)-1] == '/' || len(filesets) > 1 || len(filesets[0].includes) > 1 {
 			toFile = false
 		}
 	} else if err != nil {
 		return err
 	} else if info.IsDir() {
 		toFile = false
-	} else if len(sources) > 1 {
+	} else if len(filesets) > 1 || len(filesets[0].includes) > 1 {
 		return fmt.Errorf("only one source file allowed when destination is a file")
 	}
-	for _, source := range sources {
-		info, err = os.Stat(source)
-		if err != nil {
-			return err
-		}
-		dest := filepath.Join(destination, filepath.Base(source))
-		if info.IsDir() {
-			b.Debugf("copying dir %q to %q\n", source, dest)
-			if err = copyDirectory(source, dest, info.Mode()); err != nil {
+	for _, fs := range filesets {
+		return fs.walk(func(path, rel string, info os.FileInfo, err error) error {
+			if err != nil {
 				return err
 			}
-			continue
-		}
-		if toFile {
-			dest = destination
-		}
-		dirInfo, err := os.Stat(filepath.Dir(source))
-		if err != nil {
-			return err
-		}
-		if err = os.MkdirAll(filepath.Dir(dest), dirInfo.Mode()); err != nil {
-			return err
-		}
-		b.Debugf("copying file %q to %q\n", source, dest)
-		if err = copyFile(source, dest, info.Mode()); err != nil {
-			return err
-		}
+			dest := filepath.Join(c.destination, rel)
+			if info.IsDir() {
+				toFile = false
+				return os.MkdirAll(dest, info.Mode())
+			}
+			if toFile {
+				dest = c.destination
+			}
+			dirInfo, err := os.Stat(filepath.Dir(path))
+			if err != nil {
+				return err
+			}
+			if err = os.MkdirAll(filepath.Dir(dest), dirInfo.Mode()); err != nil {
+				return err
+			}
+			b.Debugf("copying file %q to %q\n", path, dest)
+			return copyFile(path, dest, info.Mode())
+		})
 	}
 	return nil
 }
@@ -94,26 +126,4 @@ func sameFile(src, dst string) (bool, error) {
 		return false, err
 	}
 	return absSrc == absDst, nil
-}
-
-func copyDirectory(src string, dst string, mode os.FileMode) error {
-	if err := os.MkdirAll(dst, mode); err != nil {
-		return err
-	}
-	infos, err := ioutil.ReadDir(src)
-	if err != nil {
-		return err
-	}
-	for _, info := range infos {
-		srcfp := filepath.Join(src, info.Name())
-		dstfp := filepath.Join(dst, info.Name())
-		if info.IsDir() {
-			if err = copyDirectory(srcfp, dstfp, info.Mode()); err != nil {
-				return err
-			}
-		} else if err = copyFile(srcfp, dstfp, info.Mode()); err != nil {
-			return err
-		}
-	}
-	return nil
 }

@@ -7,20 +7,15 @@ import (
 	"path/filepath"
 )
 
-type fileset struct {
-	dir   string
-	files []string
-}
-
 type archive interface {
 	Write(w io.Writer, level int, dst string, srcs []fileset) error
 }
 
 type compression struct {
-	output  io.Writer
-	files   []fileset
-	archive archive
-	level   int
+	output   io.Writer
+	filesets []fileset
+	archive  archive
+	level    int
 }
 
 func makeCompression(a archive, args []string) compression {
@@ -39,13 +34,17 @@ func (t compression) WithOutput(w io.Writer) compression {
 	return t
 }
 
-func (t compression) WithFiles(dir string, files ...string) compression {
-	if len(files) > 0 {
-		t.files = append(t.files, fileset{
-			dir:   dir,
-			files: files,
-		})
-	}
+// WithFiles adds files to compress.
+func (t compression) WithFiles(paths ...string) compression {
+	t.filesets = append(t.filesets, fileset{
+		includes: paths,
+	})
+	return t
+}
+
+// WithFileset adds a fileset to compress.
+func (t compression) WithFileset(dir, includes, excludes string) compression {
+	t.filesets = append(t.filesets, makeFileset(dir, includes, excludes))
 	return t
 }
 
@@ -61,31 +60,24 @@ func (t compression) WithLevel(level int) compression {
 
 func (t compression) Run(dst string, args ...string) {
 	if len(args) > 0 {
-		t.files = append(t.files, fileset{
-			files: args,
+		t.filesets = append(t.filesets, fileset{
+			includes: args,
 		})
 	}
 	if t.output == nil {
 		t.output = os.Stdout
 	}
-	if err := compress(t.archive, t.output, t.level, dst, t.files...); err != nil {
+	if err := compress(t.archive, t.output, t.level, dst, t.filesets...); err != nil {
 		b.Fatalln(err)
 	}
 }
 
 func compress(a archive, w io.Writer, level int, dst string, srcs ...fileset) error {
-	files := []fileset{}
-	for _, f := range srcs {
-		matches, err := glob(f.dir, f.files, true)
-		if err != nil {
-			return err
-		}
-		files = append(files, fileset{
-			dir:   f.dir,
-			files: matches,
-		})
+	fs, err := resolve(srcs, true)
+	if err != nil {
+		return err
 	}
-	if len(files) == 0 {
+	if len(fs) == 0 {
 		return fmt.Errorf("needs at least one file")
 	}
 	if dst != "-" {
@@ -93,26 +85,20 @@ func compress(a archive, w io.Writer, level int, dst string, srcs ...fileset) er
 			return err
 		}
 	}
-	return a.Write(w, level, dst, files)
+	return a.Write(w, level, dst, fs)
 }
 
-func walk(srcs []fileset, f func(path, rel string, info os.FileInfo) error) error {
-	for _, src := range srcs {
-		dir := src.dir
-		for _, file := range src.files {
-			err := filepath.Walk(filepath.Join(dir, file), func(path string, info os.FileInfo, err error) error {
-				if err != nil {
-					return err
-				}
-				rel, err := filepath.Rel(dir, path)
-				if err != nil {
-					return err
-				}
-				return f(path, rel, info)
-			})
+func walk(fs []fileset, fn func(path, rel string, info os.FileInfo) error) error {
+	for _, f := range fs {
+		err := f.walk(func(path, rel string, info os.FileInfo, err error) error {
 			if err != nil {
 				return err
 			}
+			b.Debugln("compressing", rel)
+			return fn(path, rel, info)
+		})
+		if err != nil {
+			return err
 		}
 	}
 	return nil

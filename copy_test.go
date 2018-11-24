@@ -10,13 +10,26 @@ import (
 	"gotest.tools/fs"
 )
 
+func TestCopyNoFile(t *testing.T) {
+	rootDirectory := fs.NewDir(t, "root",
+		fs.WithFile("foo.txt", "foo"))
+	defer rootDirectory.Remove()
+
+	err := Copy{destination: filepath.Join(rootDirectory.Path(), "bar.txt")}.run()
+	assert.NilError(t, err)
+
+	expected := fs.Expected(t,
+		fs.WithFile("foo.txt", "foo"))
+	assert.Assert(t, fs.Equal(rootDirectory.Path(), expected))
+}
+
 func TestCopyFileToNonExistingFile(t *testing.T) {
 	rootDirectory := fs.NewDir(t, "root",
 		fs.WithFile("foo.txt", "foo"))
 	defer rootDirectory.Remove()
 
-	err := copy(filepath.Join(rootDirectory.Path(), "bar.txt"),
-		[]string{filepath.Join(rootDirectory.Path(), "foo.txt")})
+	err := Copy{destination: filepath.Join(rootDirectory.Path(), "bar.txt")}.
+		WithFiles(filepath.Join(rootDirectory.Path(), "foo.txt")).run()
 	assert.NilError(t, err)
 
 	expected := fs.Expected(t,
@@ -31,8 +44,8 @@ func TestCopyFileToExistingFile(t *testing.T) {
 		fs.WithFile("bar.txt", "bar"))
 	defer rootDirectory.Remove()
 
-	err := copy(filepath.Join(rootDirectory.Path(), "bar.txt"),
-		[]string{filepath.Join(rootDirectory.Path(), "foo.txt")})
+	err := Copy{destination: filepath.Join(rootDirectory.Path(), "bar.txt")}.
+		WithFiles(filepath.Join(rootDirectory.Path(), "foo.txt")).run()
 	assert.NilError(t, err)
 
 	expected := fs.Expected(t,
@@ -46,8 +59,8 @@ func TestCopyFileToNonExistingDir(t *testing.T) {
 		fs.WithFile("foo.txt", "foo"))
 	defer rootDirectory.Remove()
 
-	err := copy(filepath.Join(rootDirectory.Path(), "destination")+"/",
-		[]string{filepath.Join(rootDirectory.Path(), "foo.txt")})
+	err := Copy{destination: filepath.Join(rootDirectory.Path(), "destination") + "/"}.
+		WithFiles(filepath.Join(rootDirectory.Path(), "foo.txt")).run()
 	assert.NilError(t, err)
 
 	info, err := os.Stat(rootDirectory.Path())
@@ -66,8 +79,8 @@ func TestCopyFileToExistingDir(t *testing.T) {
 		fs.WithDir("destination"))
 	defer rootDirectory.Remove()
 
-	err := copy(filepath.Join(rootDirectory.Path(), "destination"),
-		[]string{filepath.Join(rootDirectory.Path(), "foo.txt")})
+	err := Copy{destination: filepath.Join(rootDirectory.Path(), "destination")}.
+		WithFiles(filepath.Join(rootDirectory.Path(), "foo.txt")).run()
 	assert.NilError(t, err)
 
 	expected := fs.Expected(t,
@@ -83,11 +96,10 @@ func TestCopyMultipleFilesToFile(t *testing.T) {
 		fs.WithFile("bar.txt", "bar"))
 	defer rootDirectory.Remove()
 
-	err := copy(filepath.Join(rootDirectory.Path(), "bar.txt"),
-		[]string{
+	err := Copy{destination: filepath.Join(rootDirectory.Path(), "bar.txt")}.
+		WithFiles(
 			filepath.Join(rootDirectory.Path(), "foo.txt"),
-			filepath.Join(rootDirectory.Path(), "foo.txt"),
-		})
+			filepath.Join(rootDirectory.Path(), "foo.txt")).run()
 	assert.Error(t, err, "only one source file allowed when destination is a file")
 }
 
@@ -98,12 +110,10 @@ func TestCopyMultipleFilesWithNonExistingFile(t *testing.T) {
 	defer rootDirectory.Remove()
 
 	src := filepath.Join(rootDirectory.Path(), "source", "non-existing")
-	err := copy(
-		filepath.Join(rootDirectory.Path(), "destination"),
-		[]string{
+	err := Copy{destination: filepath.Join(rootDirectory.Path(), "destination")}.
+		WithFiles(
 			src,
-			filepath.Join(rootDirectory.Path(), "foo.txt"),
-		})
+			filepath.Join(rootDirectory.Path(), "foo.txt")).run()
 	assert.Error(t, err, fmt.Sprintf("file %q does not exist", src))
 }
 
@@ -114,12 +124,10 @@ func TestCopyMultipleFilesWithNonExistingGlob(t *testing.T) {
 	defer rootDirectory.Remove()
 
 	src := filepath.Join(rootDirectory.Path(), "source", "non-existing*")
-	err := copy(
-		filepath.Join(rootDirectory.Path(), "destination"),
-		[]string{
+	err := Copy{destination: filepath.Join(rootDirectory.Path(), "destination")}.
+		WithFiles(
 			src,
-			filepath.Join(rootDirectory.Path(), "foo.txt"),
-		})
+			filepath.Join(rootDirectory.Path(), "foo.txt")).run()
 	assert.Error(t, err, fmt.Sprintf("file %q does not exist", src))
 }
 
@@ -127,8 +135,8 @@ func TestCopyNonExistingFile(t *testing.T) {
 	rootDirectory := fs.NewDir(t, "root")
 	defer rootDirectory.Remove()
 
-	err := copy(filepath.Join(rootDirectory.Path(), "bar.txt"),
-		[]string{filepath.Join(rootDirectory.Path(), "non-existing")})
+	err := Copy{destination: filepath.Join(rootDirectory.Path(), "bar.txt")}.
+		WithFiles(filepath.Join(rootDirectory.Path(), "non-existing")).run()
 	assert.ErrorContains(t, err, "does not exist")
 }
 
@@ -137,8 +145,8 @@ func TestCopyFileToNonExistingPathFile(t *testing.T) {
 		fs.WithFile("foo.txt", "foo"))
 	defer rootDirectory.Remove()
 
-	err := copy(filepath.Join(rootDirectory.Path(), "bar", "bar.txt"),
-		[]string{filepath.Join(rootDirectory.Path(), "foo.txt")})
+	err := Copy{destination: filepath.Join(rootDirectory.Path(), "bar", "bar.txt")}.
+		WithFiles(filepath.Join(rootDirectory.Path(), "foo.txt")).run()
 	assert.NilError(t, err)
 
 	expected := fs.Expected(t,
@@ -154,7 +162,7 @@ func TestCopyFileOverItself(t *testing.T) {
 	defer rootDirectory.Remove()
 
 	f := filepath.Join(rootDirectory.Path(), "foo.txt")
-	err := copy(f, []string{f})
+	err := Copy{destination: f}.WithFiles(f).run()
 	assert.NilError(t, err)
 
 	expected := fs.Expected(t, fs.WithFile("foo.txt", "foo"))
@@ -169,8 +177,8 @@ func TestCopyTreeToNonExistingPath(t *testing.T) {
 				fs.WithFile("bar.txt", "bar"))))
 	defer rootDirectory.Remove()
 
-	err := copy(filepath.Join(rootDirectory.Path(), "destination"),
-		[]string{filepath.Join(rootDirectory.Path(), "source", "bar")})
+	err := Copy{destination: filepath.Join(rootDirectory.Path(), "destination")}.
+		WithFiles(filepath.Join(rootDirectory.Path(), "source", "bar")).run()
 	assert.NilError(t, err)
 
 	expected := fs.Expected(t,
@@ -196,8 +204,8 @@ func testCopyDeepTreeToExistingPath(t *testing.T) {
 			)),
 		fs.WithDir("destination"))
 
-	err := copy(filepath.Join(rootDirectory.Path(), "destination"),
-		[]string{filepath.Join(rootDirectory.Path(), "source")})
+	err := Copy{destination: filepath.Join(rootDirectory.Path(), "destination")}.
+		WithFiles(filepath.Join(rootDirectory.Path(), "source")).run()
 	assert.NilError(t, err)
 
 	expected := fs.Expected(t,
@@ -228,8 +236,8 @@ func TestCopyTreeWithGlob(t *testing.T) {
 				fs.WithFile("bar.txt", "bar"))))
 	defer rootDirectory.Remove()
 
-	err := copy(filepath.Join(rootDirectory.Path(), "destination"),
-		[]string{filepath.Join(rootDirectory.Path(), "source", "*")})
+	err := Copy{destination: filepath.Join(rootDirectory.Path(), "destination")}.
+		WithFiles(filepath.Join(rootDirectory.Path(), "source", "*")).run()
 	assert.NilError(t, err)
 
 	expected := fs.Expected(t,
@@ -252,7 +260,8 @@ func TestCopyTreeWithEmptyGlob(t *testing.T) {
 	defer rootDirectory.Remove()
 
 	src := filepath.Join(rootDirectory.Path(), "source", "non-existing*")
-	err := copy(filepath.Join(rootDirectory.Path(), "destination"), []string{src})
+	err := Copy{destination: filepath.Join(rootDirectory.Path(), "destination")}.
+		WithFiles(src).run()
 	assert.Error(t, err, fmt.Sprintf("file %q does not exist", src))
 
 	expected := fs.Expected(t,

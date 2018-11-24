@@ -45,7 +45,7 @@ func writeTar(tw *tar.Writer, path, rel string, info os.FileInfo) error {
 	if err != nil {
 		return err
 	}
-	hdr.Name = filepath.ToSlash(rel)
+	hdr.Name = rel
 	if hdr.Mode%2 == 0 && isExecutable(path) {
 		hdr.Mode++
 		b.Debugln("fixed execute permissions for", hdr.Name)
